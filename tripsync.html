@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TripSync</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f2faea;color:#1a2e1a;min-height:100vh;font-size:14px}
+
+:root{
+  --gym:#3CBE00;--gym-dark:#2a9a00;--gym-dim:#e8f8d8;--gym-glow:#3CBE0025;
+  --red:#FF0000;--yellow:#FFDC00;--blue:#009BFF;--orange:#FFA000;--purple:#C80096;
+  --bg:#f2faea;--surface:#ffffff;--surface2:#f7fcf2;
+  --border:#c8e8a8;--border2:#a0cc70;--muted:#6a9050;--text:#1a2e1a;--text2:#5a8040;
+}
+
+/* ── HEADER ── */
+.gym-header{background:var(--gym);padding:16px 16px 16px;position:relative}
+.gym-header-inner{text-align:center}
+.gym-title{font-size:2rem;font-weight:900;color:#fff;letter-spacing:1px;line-height:1}
+.gym-sub{font-size:.8rem;color:rgba(255,255,255,.85);margin-top:3px;letter-spacing:.5px}
+
+/* ── LANG SWITCHER ── */
+.lang-sw{position:absolute;top:12px;right:14px;display:flex;gap:4px}
+.lang-btn{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.5);color:#fff;
+  font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:20px;cursor:pointer;
+  transition:all .15s;font-family:inherit}
+.lang-btn.active{background:#fff;color:var(--gym);border-color:#fff}
+.lang-btn:hover:not(.active){background:rgba(255,255,255,.4)}
+
+/* ── TABS ── */
+.tabs{display:flex;justify-content:center;gap:3px;padding:10px 12px 8px;flex-wrap:wrap;
+  background:#fff;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 8px #3CBE0015}
+.tab-btn{padding:8px 20px;border-radius:7px;border:1px solid var(--border);background:var(--bg);
+  color:var(--text2);cursor:pointer;font-size:.87rem;transition:all .18s;white-space:nowrap;font-family:inherit}
+.tab-btn:hover{border-color:var(--gym);color:var(--gym);background:#f0fde8}
+.tab-btn.active{background:var(--gym);border-color:var(--gym);color:#fff;font-weight:700}
+.tab-btn.active .ti{filter:grayscale(1) brightness(10)}
+.tab-btn.disabled{opacity:.35;cursor:not-allowed}
+
+/* ── PAGES ── */
+.page{display:none;max-width:960px;margin:0 auto;padding:16px 14px 80px}
+.page.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 4px #3CBE0012}
+.card-title{font-size:.95rem;font-weight:700;color:#1a3a10;margin-bottom:12px;
+  display:flex;align-items:center;gap:7px}
+
+/* ── PASSENGER TABLE ── */
+.pass-table{width:100%;border-collapse:collapse}
+.pass-table th{font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.2px;
+  padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.pass-row{border-bottom:1px solid #ddf0c8;transition:background .15s}
+.pass-row:hover{background:#f0fce6}
+.pass-row.inactive{opacity:.45}
+.pass-row td{padding:5px 5px}
+.pass-num{color:var(--muted);font-size:.78rem;text-align:center;width:28px;user-select:none}
+
+input[type=text],input[type=number],select,input[type=search]{
+  background:#fff;border:1px solid #c8e0a8;border-radius:6px;
+  color:var(--text);padding:7px 9px;font-size:.85rem;width:100%;
+  transition:border-color .18s;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--gym);box-shadow:0 0 0 2px var(--gym-glow)}
+input::placeholder{color:#aacca0}
+select option{background:#fff}
+
+/* ── TOGGLE ── */
+.tog{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tog-slider{position:absolute;inset:0;background:#cce0b8;border-radius:22px;cursor:pointer;transition:.2s}
+.tog-slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;
+  background:#80a860;border-radius:50%;transition:.2s}
+.tog input:checked+.tog-slider{background:var(--gym)}
+.tog input:checked+.tog-slider:before{transform:translateX(18px);background:#fff}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border-radius:7px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;
+  transition:all .18s;font-family:inherit}
+.btn-primary{background:var(--gym);color:#fff}
+.btn-primary:hover{background:var(--gym-dark)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:5px 11px;font-size:.78rem}
+.btn-ghost{background:#fff;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--gym);color:var(--gym);background:#f5fce8}
+.btn-danger{background:transparent;color:#cc3333;border:1px solid #ff000030;
+  padding:4px 9px;font-size:.78rem;border-radius:5px}
+.btn-danger:hover{background:#ff00001a}
+.btn-big{padding:14px 40px;font-size:1.05rem;border-radius:10px;
+  background:linear-gradient(135deg,var(--gym),var(--gym-dark));
+  color:#fff;font-weight:700;letter-spacing:.3px;
+  box-shadow:0 4px 24px #3CBE0040;border:none;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-big:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 30px #3CBE0060}
+.btn-big:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ── CAR CARD ── */
+.car-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;margin-bottom:10px}
+.car-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.car-num{background:var(--orange);color:#fff;width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;
+  flex-shrink:0;box-shadow:0 2px 6px #FFA00040}
+.car-detect{font-size:.75rem;margin-top:3px}
+.car-detect.found{color:var(--gym-dark)}
+.car-detect.hint{color:var(--muted)}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:8px}
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-label{font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.2px}
+.check-row{display:flex;align-items:center;gap:7px;font-size:.85rem;cursor:pointer}
+.check-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--gym);cursor:pointer}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.72rem;font-weight:600}
+.badge-green {background:#d8f5d0;color:#1a6010}
+.badge-blue  {background:#d0eaff;color:#005080}
+.badge-yellow{background:#fff6c8;color:#7a5a00}
+.badge-red   {background:#ffe0e0;color:#8a0000}
+.badge-orange{background:#fff0d0;color:#8a4000}
+.badge-purple{background:#f0e0ff;color:#600080}
+.badge-gray  {background:#e8f0e0;color:var(--text2)}
+
+/* ── SETTINGS ── */
+.pair-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ── RESULTS ── */
+.variant-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  margin-bottom:18px;overflow:hidden;box-shadow:0 2px 8px #3CBE0015}
+.variant-header{padding:16px 20px;border-bottom:2px solid var(--border);display:flex;
+  align-items:center;gap:12px;flex-wrap:wrap;background:#edf8e0;
+  box-shadow:inset 0 -1px 0 var(--border2)}
+.variant-badge{padding:6px 16px;border-radius:20px;font-size:.92rem;font-weight:700;
+  color:#fff;letter-spacing:.2px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.var-1{background:var(--blue)}.var-2{background:var(--gym)}
+.var-3{background:var(--orange)}.var-4{background:var(--purple)}
+.variant-desc{font-size:.88rem;color:#4a7030;font-weight:500}
+.variant-stats{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;font-weight:600;
+  color:#3a6020;margin-left:auto}
+.variant-body{padding:14px 18px}
+.car-assign{background:var(--bg);border:1px solid var(--border);border-radius:9px;
+  margin-bottom:10px;overflow:hidden}
+.ca-header{padding:10px 14px;background:#ebf8de;display:flex;align-items:center;
+  gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.ca-name{font-weight:700;font-size:.9rem;flex:1;color:#1a3a10}
+.ca-meta{font-size:.78rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.ca-body{padding:10px 14px}
+.route-stop{display:flex;align-items:flex-start;gap:10px;padding:5px 0;position:relative}
+.route-stop:not(:last-child):after{content:'';position:absolute;left:13px;top:28px;
+  width:2px;height:calc(100% - 8px);background:var(--border)}
+.stop-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:1px}
+.sd-start {background:#ffe8c0;color:#a05000}
+.sd-pickup{background:#d0f0e0;color:#0a6a30}
+.sd-dest  {background:#d8f5b8;color:#3a7000}
+.stop-info .city{font-weight:600;font-size:.88rem;color:#1a3a10}
+.stop-info .ppl{font-size:.75rem;color:var(--muted);margin-top:2px}
+.km-tag{font-size:.72rem;color:#8aaa6a;margin-left:auto;flex-shrink:0;align-self:center}
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:8px;margin-bottom:18px}
+.sstat{background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:12px;text-align:center}
+.sstat .n{font-size:1.5rem;font-weight:700;color:var(--gym-dark)}
+.sstat .l{font-size:.72rem;color:var(--muted);margin-top:2px}
+.warning-box{background:#fff0f0;border:1px solid #ffaaaa;border-radius:9px;
+  padding:12px 15px;font-size:.85rem;color:#aa2222;margin-bottom:14px}
+.info-box{background:#edfce0;border:1px solid var(--border2);border-radius:9px;
+  padding:12px 15px;font-size:.83rem;color:#2a6a10;margin-bottom:14px}
+.empty{text-align:center;padding:28px;color:#8aaa80;font-size:.88rem}
+.empty .ei{font-size:2.2rem;margin-bottom:8px}
+.btn-center{text-align:center;margin:20px 0}
+.recalc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+
+/* ── DEMO BUTTON ── */
+.demo-btn{background:none;border:none;color:#9ab890;font-size:.75rem;cursor:pointer;
+  padding:2px 6px;border-radius:5px;transition:color .15s;font-family:inherit}
+.demo-btn:hover{color:var(--gym-dark)}
+
+@media(max-width:600px){
+  .pass-table th:nth-child(n+5),.pass-row td:nth-child(n+5){display:none}
+  .gym-title{font-size:1.4rem}
+  .lang-sw{top:8px;right:8px}
+}
+</style>
+</head>
+<body>
+
+<datalist id="cz-cities">
+<option value="Praha"><option value="Brno"><option value="Ostrava"><option value="Plzeň">
+<option value="Liberec"><option value="Olomouc"><option value="České Budějovice">
+<option value="Hradec Králové"><option value="Ústí nad Labem"><option value="Pardubice">
+<option value="Zlín"><option value="Havířov"><option value="Kladno"><option value="Most">
+<option value="Opava"><option value="Frýdek-Místek"><option value="Karviná">
+<option value="Jihlava"><option value="Teplice"><option value="Děčín">
+<option value="Karlovy Vary"><option value="Jablonec nad Nisou"><option value="Mladá Boleslav">
+<option value="Prostějov"><option value="Přerov"><option value="Chomutov">
+<option value="Česká Lípa"><option value="Znojmo"><option value="Třebíč"><option value="Šumperk">
+<option value="Kolín"><option value="Trutnov"><option value="Nový Jičín"><option value="Kroměříž">
+<option value="Litoměřice"><option value="Náchod"><option value="Benešov"><option value="Vsetín">
+<option value="Kopřivnice"><option value="Cheb"><option value="Písek"><option value="Strakonice">
+<option value="Hodonín"><option value="Uherské Hradiště"><option value="Vyškov">
+<option value="Příbram"><option value="Tábor"><option value="Beroun"><option value="Sokolov">
+<option value="Blansko"><option value="Žďár nad Sázavou"><option value="Krnov">
+<option value="Havlíčkův Brod"><option value="Bohumín"><option value="Orlová">
+<option value="Svitavy"><option value="Uherský Brod"><option value="Rokycany">
+<option value="Otrokovice"><option value="Valašské Meziříčí"><option value="Litvínov">
+<option value="Chrudim"><option value="Rychnov nad Kněžnou"><option value="Rožnov pod Radhoštěm">
+<option value="Varnsdorf"><option value="Třinec"><option value="Bruntál">
+<option value="Mělník"><option value="Říčany"><option value="Frýdlant nad Ostravicí">
+<option value="Nymburk"><option value="Brandýs nad Labem"><option value="Turnov">
+<option value="Dvůr Králové nad Labem"><option value="Žatec"><option value="Louny">
+<option value="Slaný"><option value="Kralupy nad Vltavou"><option value="Neratovice">
+<option value="Moravská Třebová"><option value="Česká Třebová"><option value="Kadaň">
+<option value="Klatovy"><option value="Domažlice"><option value="Jindřichův Hradec">
+<option value="Pelhřimov"><option value="Boskovice"><option value="Kuřim"><option value="Tišnov">
+</datalist>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="gym-header">
+  <div class="lang-sw">
+    <button class="lang-btn active" id="btn-cs" onclick="setLang('cs')">🇨🇿 CZ</button>
+    <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+  </div>
+  <div class="gym-header-inner">
+    <div class="gym-title">🚗 TripSync</div>
+    <div class="gym-sub" data-i18n="sub"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ TABS ═══════════════ -->
+<div class="tabs">
+  <button class="tab-btn active" id="tab-passengers" onclick="switchTab('passengers')"><span class="ti">👥</span> <span data-i18n="tab_pass"></span></button>
+  <button class="tab-btn" id="tab-cars" onclick="switchTab('cars')"><span class="ti">🚗</span> <span data-i18n="tab_cars"></span></button>
+  <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')"><span class="ti">⚙️</span> <span data-i18n="tab_set"></span></button>
+  <button class="tab-btn disabled" id="tab-results" onclick="switchTab('results')"><span class="ti">🗺️</span> <span data-i18n="tab_res"></span></button>
+</div>
+
+<!-- ═══════════════ TAB 1: CESTUJÍCÍ / PASSENGERS ═══════════════ -->
+<div id="page-passengers" class="page active">
+  <div class="card">
+    <div class="card-title">
+      👥 <span data-i18n="pass_title"></span>
+      <span style="font-size:.78rem;font-weight:400;color:var(--muted);margin-left:auto" data-i18n="pass_max"></span>
+      <button class="demo-btn" onclick="fillDemo('passengers')" data-i18n="demo_btn"></button>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="pass-table">
+      <thead><tr>
+        <th style="width:28px">#</th>
+        <th data-i18n="col_name"></th>
+        <th style="width:70px;text-align:center" data-i18n="col_going"></th>
+        <th data-i18n="col_home"></th>
+        <th data-i18n="col_alt1"></th>
+        <th data-i18n="col_alt2"></th>
+        <th style="width:36px"></th>
+      </tr></thead>
+      <tbody id="pass-tbody"></tbody>
+    </table>
+    </div>
+    <div style="margin-top:10px;font-size:.78rem;color:var(--muted);background:#f0fce8;border-radius:6px;padding:6px 10px;border-left:3px solid var(--gym)" data-i18n="pass_hint"></div>
+  </div>
+  <div id="pass-summary" style="font-size:.82rem;color:var(--gym-dark);font-weight:600;text-align:right;margin-top:-6px"></div>
+</div>
+
+<!-- ═══════════════ TAB 2: AUTA / CARS ═══════════════ -->
+<div id="page-cars" class="page">
+  <div style="text-align:right;margin-bottom:6px">
+    <button class="demo-btn" onclick="fillDemo('cars')" data-i18n="demo_btn"></button>
+  </div>
+  <div id="cars-container"></div>
+  <div class="btn-center">
+    <button class="btn btn-primary" onclick="addCar()" id="add-car-btn" data-i18n="add_car"></button>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:6px" id="max-cars-hint"></div>
+  </div>
+  <div class="card" style="margin-top:18px">
+    <div class="card-title">⛽ <span data-i18n="fuel_title"></span></div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px" data-i18n="fuel_desc"></p>
+    <div class="form-group" style="max-width:280px">
+      <label class="form-label" data-i18n="fuel_label"></label>
+      <select id="fuel-overhead">
+        <option value="0"  data-i18n-opt="fuel_0"></option>
+        <option value="20" selected data-i18n-opt="fuel_20"></option>
+        <option value="40" data-i18n-opt="fuel_40"></option>
+        <option value="60" data-i18n-opt="fuel_60"></option>
+        <option value="80" data-i18n-opt="fuel_80"></option>
+        <option value="100" data-i18n-opt="fuel_100"></option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 3: NASTAVENÍ / SETTINGS ═══════════════ -->
+<div id="page-settings" class="page">
+  <div style="text-align:right;margin-bottom:6px">
+    <button class="demo-btn" onclick="fillDemo('settings')" data-i18n="demo_btn"></button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📍 <span data-i18n="dest_title"></span></div>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:span 2">
+        <label class="form-label" data-i18n="dest_label"></label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="dest-input" style="flex:1" data-i18n-ph="dest_ph">
+          <button class="btn btn-ghost btn-sm" onclick="geocodeDest()" data-i18n="dest_find"></button>
+        </div>
+      </div>
+    </div>
+    <div id="dest-result" style="font-size:.8rem;margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔗 <span data-i18n="pair_title"></span></div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px" data-i18n="pair_desc"></p>
+    <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label class="form-label" data-i18n="pair_p1"></label>
+        <select id="pair-p1"></select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label class="form-label" data-i18n="pair_p2"></label>
+        <select id="pair-p2"></select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label class="form-label" data-i18n="pair_p3"></label>
+        <select id="pair-p3"></select>
+      </div>
+      <button class="btn btn-primary" onclick="addPair()" style="flex-shrink:0;white-space:nowrap;background:var(--gym-dark)" data-i18n="pair_add"></button>
+    </div>
+    <div id="pairs-list"></div>
+    <label class="check-row" style="margin-top:10px">
+      <input type="checkbox" id="pair-return">
+      <span data-i18n="pair_return"></span>
+    </label>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⏩ <span data-i18n="early_title"></span></div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px" data-i18n="early_desc"></p>
+    <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label class="form-label" data-i18n="early_p1"></label>
+        <select id="early-p1"></select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label class="form-label" data-i18n="early_p2"></label>
+        <select id="early-p2"></select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:120px">
+        <label class="form-label" data-i18n="early_p3"></label>
+        <select id="early-p3"></select>
+      </div>
+      <button class="btn btn-primary" onclick="addToEarlyGroup()" style="flex-shrink:0;white-space:nowrap;background:var(--gym-dark)" data-i18n="early_add"></button>
+    </div>
+    <div id="early-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔄 <span data-i18n="ret_title"></span></div>
+    <label class="check-row">
+      <input type="checkbox" id="return-mix" checked>
+      <span data-i18n="ret_mix"></span>
+    </label>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px" data-i18n="ret_hint"></p>
+  </div>
+
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">⛽ <span data-i18n="fp_title"></span></div>
+    <div class="btn-center" style="margin:0 0 14px">
+      <button class="btn btn-primary" onclick="fetchFuelPrices()" style="background:var(--gym-dark);font-size:.95rem;padding:11px 28px" data-i18n="fp_btn"></button>
+    </div>
+    <div id="fp-status" style="font-size:.82rem;margin-bottom:10px;text-align:center"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" data-i18n="fp_petrol_lbl"></label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="fp-petrol-input" min="10" max="100" step="0.1" style="flex:1" data-i18n-ph="fp_ph" oninput="updateFuelPriceManual('petrol',this.value)">
+          <span style="font-size:.82rem;color:var(--muted);white-space:nowrap">Kč/l</span>
+        </div>
+        <div id="fp-petrol-date" style="font-size:.72rem;color:var(--gym-dark);margin-top:2px"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="fp_diesel_lbl"></label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="fp-diesel-input" min="10" max="100" step="0.1" style="flex:1" data-i18n-ph="fp_ph" oninput="updateFuelPriceManual('diesel',this.value)">
+          <span style="font-size:.82rem;color:var(--muted);white-space:nowrap">Kč/l</span>
+        </div>
+        <div id="fp-diesel-date" style="font-size:.72rem;color:var(--gym-dark);margin-top:2px"></div>
+      </div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:4px" data-i18n="fp_note"></div>
+  </div>
+
+  <div class="btn-center" style="margin-top:24px">
+    <button class="btn btn-big" id="optimize-btn" onclick="runOptimize()" data-i18n="opt_btn"></button>
+    <div style="margin-top:8px;font-size:.8rem;color:var(--muted)" data-i18n="opt_hint"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 4: VÝSLEDKY / RESULTS ═══════════════ -->
+<div id="page-results" class="page">
+  <div class="recalc-top">
+    <div style="font-size:.9rem;font-weight:700;color:#1a3a10" data-i18n="tab_res"></div>
+    <button class="btn btn-ghost btn-sm" onclick="runOptimize()" data-i18n="recalc"></button>
+  </div>
+  <div id="result-output">
+    <div class="empty"><div class="ei">🗺️</div><span data-i18n="res_empty"></span></div>
+  </div>
+  <div class="btn-center" style="margin-top:10px">
+    <button class="btn btn-ghost btn-sm" onclick="runOptimize()" data-i18n="recalc_full"></button>
+  </div>
+</div>
+
+<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<script>
+// ─────────────────────────────────────────────
+//  TRANSLATIONS
+// ─────────────────────────────────────────────
+const LANG = {
+  cs: {
+    sub:         'Jak rozdělit lidi do aut pro teambuilding / offsite / služebku',
+    tab_pass:    'Cestující',
+    tab_cars:    'Auta',
+    tab_set:     'Nastavení',
+    tab_res:     'Navržené varianty',
+    pass_title:  'Zadej cestující',
+    pass_max:    'max. 30 osob',
+    demo_btn:    '🎲 vlož náhodná testovací data',
+    col_name:    'Jméno',
+    col_going:   'Jede?',
+    col_home:    '🏠 Bydliště',
+    col_alt1:    '🔁 Altern. vyzvednutí 1',
+    col_alt2:    '🔁 Altern. vyzvednutí 2',
+    pass_hint:   '💡 Řádky přibývají automaticky. Alternativní vyzvednutí = kde je možné cestujícího také vyzvednout.',
+    ph_name:     'Jméno Příjmení',
+    ph_city:     'město…',
+    ph_city_opt: 'volitelné',
+    not_going:   '— nejede —',
+    summary:     (n,g,ng) => `${n} osob · ${g} jede · ${ng} nejede`,
+    add_car:     '➕ Přidat auto',
+    max_cars:    (max,cur) => `Max. ${max} aut · aktuálně: ${cur}`,
+    car_remove:  '✕ Odebrat',
+    car_detect_hint: 'Zadej název — doplníme spotřebu a kapacitu automaticky',
+    car_detect_found:(m,s,ev,c) => `✓ ${m} · ${s} míst · ${ev ? '⚡ elektro' : c+'l/100km'}`,
+    lbl_driver:  'Řidič',
+    lbl_luggage: 'Velká zavazadla',
+    lbl_seats:   'Celková kapacita',
+    lbl_cons:    'Spotřeba (l/100km)',
+    lbl_comfort: '🛋️ Chci větší pohodlí (−1 místo)',
+    lbl_capacity:'Kapacita',
+    lug_roofbox: '📦 Střešní box',
+    lug_trunk:   '🧳 Do kufru',
+    lug_seats:   '💺 Na sedadla (−1 místo)',
+    no_driver:   '— nevybráno —',
+    no_cars:     'Zatím žádné auto.',
+    fuel_title:  'Globální navýšení spotřeby u všech aut',
+    fuel_desc:   'Reálná spotřeba na horských cestách bývá vyšší než údaj v TP.',
+    fuel_label:  'Spotřeba oproti TP vzroste o',
+    fuel_0:      '0 % — spotřeba přesně dle TP',
+    fuel_20:     '20 % — mírně vyšší spotřeba',
+    fuel_40:     '40 % — mírně kopcovitý terén',
+    fuel_60:     '60 % — náročnější kopcovitý terén',
+    fuel_80:     '80 % — velmi zvýšená spotřeba',
+    fuel_100:    '100 % — dvojnásobek spotřeby vůči TP',
+    dest_title:  'Cíl cesty',
+    dest_label:  'Cílové místo (obec, adresa — kdekoliv v Evropě)',
+    dest_ph:     'např. Pichl bei Schladming, Austria',
+    dest_find:   '🔍 Najít',
+    dest_coords: (lat,lng) => `✓ Koordináty: ${lat}, ${lng}`,
+    dest_ok:     (name,lat,lng) => `✓ ${name}… (${lat}, ${lng})`,
+    dest_err:    '✗ Místo nenalezeno. Zkus upřesnit název.',
+    dest_offline:'⚠️ Geocoding nedostupný. Vzdálenosti budou přibližné.',
+    dest_loading:'⏳ Hledám…',
+    pair_title:  'Musí jet spolu',
+    pair_desc:   'Přidej skupiny (rodiny, partneři…), kteří musí být ve stejném autě.',
+    pair_p1:     'Cestující 1',
+    pair_p2:     'Cestující 2',
+    pair_p3:     'Cestující 3 (volitelný)',
+    pair_sel:    '— vyber —',
+    pair_add:    '🔗 Tito musí jet spolu',
+    pair_return: 'Tyto osoby musí jet spolu i na zpáteční cestě',
+    pair_none:   'Zatím žádná pravidla.',
+    early_title: 'Musí přijet nebo odjet dřív',
+    early_desc:  'Tito cestující musí jet v samostatném autě, které odjíždí dříve. Zbylá místa mohou obsadit další cestující.',
+    early_p1:    'Cestující 1',
+    early_p2:    'Cestující 2',
+    early_p3:    'Cestující 3',
+    early_sel:   '— vyber —',
+    early_add:   '⏩ Tito musí jet dřív',
+    early_none:  'Zatím nikdo nevybrán.',
+    alert_early_sel: 'Vyber alespoň jednoho cestujícího.',
+    alert_early_dup: 'Tento cestující je již ve skupině.',
+    ret_title:   'Zpáteční cesta',
+    ret_mix:     'Na zpáteční cestě mohou lidé změnit auto (řidiči zůstávají, ostatní se mohou přeskupit)',
+    ret_hint:    'Preferujeme minimální změny. Výsledek ukáže obě varianty — tam i zpět.',
+    opt_btn:     '⚡ Navrhni varianty',
+    opt_hint:    'Vypočítá 6 variant rozdělení do aut (A–C standard, D–F eco)',
+    recalc:      '🔄 Přepočítat',
+    recalc_full: '🔄 Přepočítat varianty',
+    res_empty:   'Zatím žádné výsledky. Přejdi na Nastavení a klikni Navrhni varianty.',
+    opt_btn_done:'🔄 Přepočítat varianty',
+    var_a_lbl:   'Varianta A',
+    var_b_lbl:   'Varianta B',
+    var_c_lbl:   'Varianta C',
+    var_d_lbl:   'Varianta D',
+    var_e_lbl:   'Varianta E',
+    var_f_lbl:   'Varianta F',
+    var_a_desc:  'Nejméně aut, max. obsazenost',
+    var_b_desc:  'O 1 auto navíc, více prostoru',
+    var_c_desc:  'O 2 auta navíc, největší pohodlí',
+    var_d_desc:  'Nejúspornější auta, minimum vozů',
+    var_e_desc:  'Nejúspornější auta, o 1 auto navíc',
+    var_f_desc:  'Nejúspornější auta, o 2 auta navíc',
+    res_cars:    (n) => `🚙 ${n} ${n===1?'auto':n<=4?'auta':'aut'}`,
+    res_km:      (n) => `📍 ~${n} km`,
+    res_fuel:    (l) => `⛽ ~${l} l`,
+    res_elec:    '⚡ elektro',
+    res_dest:    'Cíl',
+    unassigned:  (n,names) => `⚠️ Nepřiřazení (${n}): ${names}`,
+    auto_expanded: (planned,actual) => `Varianta plánovala ${planned} aut, ale pro umístění všech cestujících bylo potřeba ${actual}.`,
+    warn_nop:    '⚠️ Nejsou žádní cestující.',
+    warn_nocar:  '⚠️ Nejsou žádná auta.',
+    warn_nodest: '⚠️ Nastav cíl cesty v Nastavení.',
+    alert_maxcars:(max,n) => `Max. ${max} aut (${n} cestujících ÷ 2)`,
+    alert_sel2:  'Vyber obě osoby!',
+    alert_diff:  'Osoby musí být různé!',
+    alert_dup:   'Pravidlo už existuje.',
+    alert_dest:  'Zadej cílové místo!',
+    alert_nopass:'Nejdřív zadej cestující.',
+    confirm_pass:'Přepsat stávající cestující?',
+    confirm_cars:'Přepsat stávající auta?',
+    fp_title:    'Cena paliva v ČR',
+    fp_btn:      '⬇️ Stáhnout a propočítat ceny paliva',
+    fp_petrol_lbl:'Natural BA95 (Kč/l)',
+    fp_diesel_lbl:'Diesel (Kč/l)',
+    fp_ph:       'cena…',
+    fp_loading:  '⏳ Načítám ceny paliva…',
+    fp_date:     (d) => `průměrná cena, dne ${d}`,
+    fp_fail:     '⚠️ Automatické načítání se nezdařilo. Zadejte ceny ručně.',
+    fp_ok:       '✓ Ceny načteny',
+    fp_note:     'Po zadání cen se v Navržených variantách zobrazí odhad nákladů za palivo.',
+    lbl_fueltype:'Palivo',
+    ft_petrol:   'Natural',
+    ft_diesel:   'Diesel',
+    res_cost:    (kc) => `💰 ~${kc.toLocaleString('cs-CZ')} Kč`,
+    res_total_cost:(kc)=> `💰 ~${kc.toLocaleString('cs-CZ')} Kč celkem`,
+  },
+  en: {
+    sub:         'How to split people into cars for teambuilding / offsite / work trip',
+    tab_pass:    'Passengers',
+    tab_cars:    'Cars',
+    tab_set:     'Settings',
+    tab_res:     'Suggested Routes',
+    pass_title:  'Add Passengers',
+    pass_max:    'max. 30 people',
+    demo_btn:    '🎲 load sample data',
+    col_name:    'Name',
+    col_going:   'Going?',
+    col_home:    '🏠 Home City',
+    col_alt1:    '🔁 Alt. Pickup 1',
+    col_alt2:    '🔁 Alt. Pickup 2',
+    pass_hint:   '💡 Rows expand automatically. Alternative pickup = where the passenger can also be picked up.',
+    ph_name:     'Full Name',
+    ph_city:     'city…',
+    ph_city_opt: 'optional',
+    not_going:   '— not going —',
+    summary:     (n,g,ng) => `${n} people · ${g} going · ${ng} not going`,
+    add_car:     '➕ Add Car',
+    max_cars:    (max,cur) => `Max. ${max} cars · current: ${cur}`,
+    car_remove:  '✕ Remove',
+    car_detect_hint: 'Enter car name — we\'ll fill in consumption and capacity automatically',
+    car_detect_found:(m,s,ev,c) => `✓ ${m} · ${s} seats · ${ev ? '⚡ electric' : c+'l/100km'}`,
+    lbl_driver:  'Driver',
+    lbl_luggage: 'Large Luggage',
+    lbl_seats:   'Total Seats',
+    lbl_cons:    'Fuel (l/100km)',
+    lbl_comfort: '🛋️ I want more comfort (−1 seat)',
+    lbl_capacity:'Capacity',
+    lug_roofbox: '📦 Roof Box',
+    lug_trunk:   '🧳 In Boot',
+    lug_seats:   '💺 On Seats (−1 seat)',
+    no_driver:   '— not selected —',
+    no_cars:     'No cars added yet.',
+    fuel_title:  'Global Fuel Overhead',
+    fuel_desc:   'Real fuel consumption on hilly roads tends to exceed the official figure.',
+    fuel_label:  'Fuel increase vs. official figure',
+    fuel_0:      '0% — exact per spec',
+    fuel_20:     '20% — slightly higher consumption',
+    fuel_40:     '40% — mildly hilly terrain',
+    fuel_60:     '60% — more demanding hilly terrain',
+    fuel_80:     '80% — very high consumption',
+    fuel_100:    '100% — double the official spec',
+    dest_title:  'Destination',
+    dest_label:  'Destination (town, address — anywhere in Europe)',
+    dest_ph:     'e.g. Pichl bei Schladming, Austria',
+    dest_find:   '🔍 Find',
+    dest_coords: (lat,lng) => `✓ Coordinates: ${lat}, ${lng}`,
+    dest_ok:     (name,lat,lng) => `✓ ${name}… (${lat}, ${lng})`,
+    dest_err:    '✗ Location not found. Try a more specific name.',
+    dest_offline:'⚠️ Geocoding unavailable. Distances will be approximate.',
+    dest_loading:'⏳ Searching…',
+    pair_title:  'Must Travel Together',
+    pair_desc:   'Add groups (families, partners…) who must be in the same car.',
+    pair_p1:     'Passenger 1',
+    pair_p2:     'Passenger 2',
+    pair_p3:     'Passenger 3 (optional)',
+    pair_sel:    '— select —',
+    pair_add:    '🔗 These Must Ride Together',
+    pair_return: 'These people must also travel together on the return trip',
+    pair_none:   'No rules defined yet.',
+    early_title: 'Must Depart or Arrive Earlier',
+    early_desc:  'These passengers must travel in a separate car departing earlier. Remaining seats may be filled by other passengers.',
+    early_p1:    'Passenger 1',
+    early_p2:    'Passenger 2',
+    early_p3:    'Passenger 3',
+    early_sel:   '— select —',
+    early_add:   '⏩ These Must Go Earlier',
+    early_none:  'No one selected yet.',
+    alert_early_sel: 'Select at least one passenger.',
+    alert_early_dup: 'This passenger is already in the group.',
+    ret_title:   'Return Trip',
+    ret_mix:     'On the return trip, people may switch cars (drivers stay, others may regroup)',
+    ret_hint:    'We prefer minimal changes. Results will show both ways — there and back.',
+    opt_btn:     '⚡ Suggest Routes',
+    opt_hint:    'Calculates 6 route options (A–C standard, D–F eco)',
+    recalc:      '🔄 Recalculate',
+    recalc_full: '🔄 Recalculate Routes',
+    res_empty:   'No results yet. Go to Settings and click Suggest Routes.',
+    opt_btn_done:'🔄 Recalculate Routes',
+    var_a_lbl:   'Option A',
+    var_b_lbl:   'Option B',
+    var_c_lbl:   'Option C',
+    var_d_lbl:   'Option D',
+    var_e_lbl:   'Option E',
+    var_f_lbl:   'Option F',
+    var_a_desc:  'Fewest cars, max. occupancy',
+    var_b_desc:  'One extra car, more space',
+    var_c_desc:  'Two extra cars, maximum comfort',
+    var_d_desc:  'Most efficient cars, fewest vehicles',
+    var_e_desc:  'Most efficient cars, one extra vehicle',
+    var_f_desc:  'Most efficient cars, two extra vehicles',
+    res_cars:    (n) => `🚙 ${n} cars`,
+    res_km:      (n) => `📍 ~${n} km`,
+    res_fuel:    (l) => `⛽ ~${l} l`,
+    res_elec:    '⚡ electric',
+    res_dest:    'Destination',
+    unassigned:  (n,names) => `⚠️ Unassigned (${n}): ${names}`,
+    auto_expanded: (planned,actual) => `This option planned ${planned} cars, but needed ${actual} to seat everyone.`,
+    warn_nop:    '⚠️ No passengers added.',
+    warn_nocar:  '⚠️ No cars added.',
+    warn_nodest: '⚠️ Set a destination in Settings.',
+    alert_maxcars:(max,n) => `Max. ${max} cars (${n} passengers ÷ 2)`,
+    alert_sel2:  'Please select both people!',
+    alert_diff:  'People must be different!',
+    alert_dup:   'Rule already exists.',
+    alert_dest:  'Please enter a destination!',
+    alert_nopass:'Please add passengers first.',
+    confirm_pass:'Overwrite existing passengers?',
+    confirm_cars:'Overwrite existing cars?',
+    fp_title:    'Fuel Prices (Czech Republic)',
+    fp_btn:      '⬇️ Download & calculate fuel prices',
+    fp_petrol_lbl:'Petrol 95 (CZK/l)',
+    fp_diesel_lbl:'Diesel (CZK/l)',
+    fp_ph:       'price…',
+    fp_loading:  '⏳ Fetching fuel prices…',
+    fp_date:     (d) => `avg. price, date ${d}`,
+    fp_fail:     '⚠️ Automatic fetch failed. Please enter prices manually.',
+    fp_ok:       '✓ Prices loaded',
+    fp_note:     'Once prices are entered, Suggested Routes will show estimated fuel costs.',
+    lbl_fueltype:'Fuel type',
+    ft_petrol:   'Petrol',
+    ft_diesel:   'Diesel',
+    res_cost:    (kc) => `💰 ~${kc.toLocaleString('en-CZ')} CZK`,
+    res_total_cost:(kc)=> `💰 ~${kc.toLocaleString('en-CZ')} CZK total`,
+  }
+};
+
+let lang = 'cs';
+function t(k){ const v=(LANG[lang]||LANG.cs)[k]; return v!==undefined?v:k; }
+
+function setLang(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  document.getElementById('btn-cs').classList.toggle('active', l==='cs');
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  // update static data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if(typeof v === 'string') el.textContent = v;
+  });
+  // update placeholders
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh);
+    if(typeof v === 'string') el.placeholder = v;
+  });
+  // update select options
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const v = t(el.dataset.i18nOpt);
+    if(typeof v === 'string') el.textContent = v;
+  });
+  // re-render dynamic parts
+  renderPassengerTable();
+  if(document.getElementById('page-cars').classList.contains('active')) renderCars();
+  renderPairs();
+  updatePassSummary();
+  updateDestDisplay();
+}
+
+function updateFuelPriceManual(type, val) {
+  const v = parseFloat(val);
+  if(!isNaN(v) && v > 10 && v < 100) {
+    state.fuelPrices[type] = v;
+    state.fuelPrices.date = new Date().toLocaleDateString('cs-CZ');
+  } else {
+    state.fuelPrices[type] = null;
+  }
+}
+
+async function fetchFuelPrices() {
+  const statusEl = document.getElementById('fp-status');
+  if(!statusEl) return;
+  statusEl.innerHTML = `<span style="color:var(--muted)">${t('fp_loading')}</span>`;
+
+  // Helper: find first number in text that looks like a fuel price (25–65 Kč/l)
+  function firstFuelPrice(text) {
+    const re = /(\d{2,3})[.,](\d{1,3})/g;
+    let m;
+    while((m = re.exec(text)) !== null) {
+      const v = parseFloat(m[1] + '.' + m[2]);
+      if(v >= 25 && v <= 65) return v;
+    }
+    return null;
+  }
+
+  // Helper: try to apply kurzy.cz parsing on HTML
+  function parseKurzy(html) {
+    if(!html || html.length < 200) return null;
+    const benzIdx = html.search(/[Bb]enzin/);
+    const naftIdx = html.search(/[Nn]afta/);
+    if(benzIdx < 0 || naftIdx < 0) return null;
+    const petrol = firstFuelPrice(html.slice(benzIdx, benzIdx + 3000));
+    const diesel = firstFuelPrice(html.slice(naftIdx, naftIdx + 3000));
+    if(!petrol || !diesel) return null;
+    const dateMatch = html.slice(Math.max(0, benzIdx - 200), benzIdx + 3000).match(/(\d{2}\.\d{2}\.\d{4})/);
+    const srcDate = dateMatch ? dateMatch[1] : new Date().toLocaleDateString('cs-CZ');
+    return {petrol, diesel, date: srcDate};
+  }
+
+  // Helper: try to apply CCS.cz parsing on HTML (fallback)
+  function parseCCS(html) {
+    if(!html || html.length < 200) return null;
+    const natMatch  = html.match(/[Nn]atural[^]*?(\d{2})[,.](\d{2})/);
+    const diesMatch = html.match(/[Dd]iesel[^]*?(\d{2})[,.](\d{2})/);
+    const petrol = natMatch  ? parseFloat(natMatch[1]+'.'+natMatch[2])   : null;
+    const diesel = diesMatch ? parseFloat(diesMatch[1]+'.'+diesMatch[2]) : null;
+    if(!petrol || !diesel || petrol<20 || petrol>80 || diesel<20 || diesel>80) return null;
+    return {petrol, diesel, date: new Date().toLocaleDateString('cs-CZ')};
+  }
+
+  // Ordered list of attempts: [proxyFn, targetUrl, parserFn]
+  const attempts = [
+    [u => `https://corsproxy.io/?${encodeURIComponent(u)}`,             'https://www.kurzy.cz/komodity/benzin-nafta-cena/', parseKurzy],
+    [u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, 'https://www.kurzy.cz/komodity/benzin-nafta-cena/', parseKurzy],
+    [u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, 'https://www.kurzy.cz/komodity/benzin-nafta-cena/', parseKurzy],
+    [u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`, 'https://www.ccs.cz/sluzby/ceny-pohonnych-hmot/', parseCCS],
+  ];
+
+  for(const [proxyFn, targetUrl, parseFn] of attempts) {
+    try {
+      const res = await fetch(proxyFn(targetUrl), {signal: AbortSignal.timeout(8000)});
+      if(!res.ok) continue;
+      const html = await res.text();
+      const result = parseFn(html);
+      if(!result) continue;
+      const {petrol, diesel, date: srcDate} = result;
+      state.fuelPrices = {petrol, diesel, date: srcDate};
+      const pEl=document.getElementById('fp-petrol-input'), dEl=document.getElementById('fp-diesel-input');
+      if(pEl) pEl.value = petrol.toFixed(2).replace('.',',');
+      if(dEl) dEl.value = diesel.toFixed(2).replace('.',',');
+      const dateStr = t('fp_date')(srcDate);
+      const pdEl=document.getElementById('fp-petrol-date'), ddEl=document.getElementById('fp-diesel-date');
+      if(pdEl) pdEl.textContent = dateStr;
+      if(ddEl) ddEl.textContent = dateStr;
+      statusEl.innerHTML=`<span style="color:var(--gym-dark);font-weight:600">${t('fp_ok')} — ${petrol.toFixed(2).replace('.',',')} / ${diesel.toFixed(2).replace('.',',')} Kč/l (${srcDate})</span>`;
+      return;
+    } catch(e) { /* try next */ }
+  }
+  // All attempts failed
+  statusEl.innerHTML=`<span style="color:#b87000">${t('fp_fail')}</span>`;
+}
+
+function updateDestDisplay() {
+  const el = document.getElementById('dest-result');
+  if(!el || !state.dest.resolved || !state.dest.lat) return;
+  el.innerHTML = `<span style="color:var(--gym-dark)">${t('dest_coords')(state.dest.lat, state.dest.lng)}</span>`;
+}
+
+// ─────────────────────────────────────────────
+//  CITY & CAR DATABASES
+// ─────────────────────────────────────────────
+const CITY_COORDS = {
+  'Praha':{lat:50.0755,lng:14.4378},'Brno':{lat:49.1951,lng:16.6068},'Ostrava':{lat:49.8209,lng:18.2625},
+  'Plzeň':{lat:49.7384,lng:13.3736},'Liberec':{lat:50.7663,lng:15.0543},'Olomouc':{lat:49.5938,lng:17.2509},
+  'České Budějovice':{lat:48.9745,lng:14.4743},'Hradec Králové':{lat:50.2104,lng:15.8252},
+  'Ústí nad Labem':{lat:50.6607,lng:14.0328},'Pardubice':{lat:50.0343,lng:15.7812},
+  'Zlín':{lat:49.2247,lng:17.6643},'Havířov':{lat:49.7797,lng:18.4339},
+  'Kladno':{lat:50.1483,lng:14.1008},'Most':{lat:50.5035,lng:13.6364},'Opava':{lat:49.9385,lng:17.9024},
+  'Frýdek-Místek':{lat:49.6833,lng:18.35},'Karviná':{lat:49.8566,lng:18.5431},
+  'Jihlava':{lat:49.3961,lng:15.5896},'Teplice':{lat:50.6404,lng:13.8247},
+  'Děčín':{lat:50.7743,lng:14.2153},'Karlovy Vary':{lat:50.2274,lng:12.8719},
+  'Jablonec nad Nisou':{lat:50.7236,lng:15.1703},'Mladá Boleslav':{lat:50.4113,lng:14.9037},
+  'Prostějov':{lat:49.4728,lng:17.1122},'Přerov':{lat:49.4555,lng:17.4521},
+  'Chomutov':{lat:50.4621,lng:13.4184},'Česká Lípa':{lat:50.6848,lng:14.5372},
+  'Znojmo':{lat:48.8554,lng:16.049},'Třebíč':{lat:49.2147,lng:15.8774},
+  'Šumperk':{lat:49.9677,lng:16.9719},'Kolín':{lat:50.0261,lng:15.2034},
+  'Trutnov':{lat:50.5609,lng:15.9124},'Nový Jičín':{lat:49.5939,lng:18.0107},
+  'Kroměříž':{lat:49.2981,lng:17.3945},'Litoměřice':{lat:50.5349,lng:14.1302},
+  'Náchod':{lat:50.4164,lng:16.1655},'Benešov':{lat:49.7818,lng:14.6839},
+  'Vsetín':{lat:49.3392,lng:18.0015},'Kopřivnice':{lat:49.5975,lng:18.1451},
+  'Cheb':{lat:50.0799,lng:12.3727},'Písek':{lat:49.3086,lng:14.1478},
+  'Strakonice':{lat:49.2607,lng:13.9027},'Hodonín':{lat:48.8499,lng:17.1316},
+  'Uherské Hradiště':{lat:49.0695,lng:17.4597},'Vyškov':{lat:49.2767,lng:16.9984},
+  'Příbram':{lat:49.6944,lng:14.0091},'Tábor':{lat:49.4172,lng:14.6556},
+  'Beroun':{lat:49.9606,lng:14.0699},'Sokolov':{lat:50.1809,lng:12.6415},
+  'Blansko':{lat:49.3622,lng:16.6453},'Žďár nad Sázavou':{lat:49.5636,lng:15.9404},
+  'Krnov':{lat:50.0908,lng:17.7047},'Havlíčkův Brod':{lat:49.6065,lng:15.5797},
+  'Bohumín':{lat:49.9093,lng:18.3555},'Orlová':{lat:49.8537,lng:18.4314},
+  'Svitavy':{lat:49.7572,lng:16.468},'Uherský Brod':{lat:48.9943,lng:17.6433},
+  'Rokycany':{lat:49.7441,lng:13.5954},'Otrokovice':{lat:49.2089,lng:17.5285},
+  'Valašské Meziříčí':{lat:49.4724,lng:17.9686},'Litvínov':{lat:50.6019,lng:13.6099},
+  'Chrudim':{lat:49.9573,lng:15.7965},'Rychnov nad Kněžnou':{lat:50.1646,lng:16.2742},
+  'Rožnov pod Radhoštěm':{lat:49.4583,lng:18.1439},'Varnsdorf':{lat:50.9106,lng:14.6162},
+  'Třinec':{lat:49.6767,lng:18.6744},'Bruntál':{lat:49.9885,lng:17.4643},
+  'Mělník':{lat:50.3506,lng:14.4746},'Říčany':{lat:49.9896,lng:14.6537},
+  'Nymburk':{lat:50.1862,lng:15.0436},'Žatec':{lat:50.3247,lng:13.5427},
+  'Louny':{lat:50.3555,lng:13.7977},'Slaný':{lat:50.2303,lng:14.0836},
+  'Kralupy nad Vltavou':{lat:50.2423,lng:14.3095},'Turnov':{lat:50.5858,lng:15.1569},
+  'Dvůr Králové nad Labem':{lat:50.4319,lng:15.8116},'Moravská Třebová':{lat:49.7576,lng:16.6628},
+  'Česká Třebová':{lat:49.9014,lng:16.4457},'Klatovy':{lat:49.3953,lng:13.2961},
+  'Domažlice':{lat:49.4406,lng:12.9303},'Jindřichův Hradec':{lat:49.1444,lng:15.0017},
+  'Pelhřimov':{lat:49.4315,lng:15.2228},'Boskovice':{lat:49.4889,lng:16.6623},
+  'Kuřim':{lat:49.2997,lng:16.5317},'Tišnov':{lat:49.3476,lng:16.4245}
+};
+
+const CAR_DB = [
+  {k:['octavia'],m:'Škoda Octavia',s:5,c:5.8},{k:['superb'],m:'Škoda Superb',s:5,c:6.5},
+  {k:['fabia'],m:'Škoda Fabia',s:5,c:5.2},{k:['kodiaq'],m:'Škoda Kodiaq',s:7,c:7.2},
+  {k:['karoq'],m:'Škoda Karoq',s:5,c:6.8},{k:['scala'],m:'Škoda Scala',s:5,c:5.5},
+  {k:['kamiq'],m:'Škoda Kamiq',s:5,c:6.0},{k:['enyaq'],m:'Škoda Enyaq',s:5,c:0,ev:true},
+  {k:['rapid'],m:'Škoda Rapid',s:5,c:5.4},
+  {k:['golf'],m:'VW Golf',s:5,c:5.5},{k:['passat'],m:'VW Passat',s:5,c:6.2},
+  {k:['tiguan'],m:'VW Tiguan',s:5,c:7.0},{k:['touran'],m:'VW Touran',s:7,c:6.5},
+  {k:['t-roc','troc'],m:'VW T-Roc',s:5,c:6.5},{k:['sharan'],m:'VW Sharan',s:7,c:7.0},
+  {k:['multivan','caravelle'],m:'VW Multivan',s:9,c:9.0},{k:['transporter','t5','t6'],m:'VW Transporter',s:9,c:9.0},
+  {k:['id.3','id3'],m:'VW ID.3',s:5,c:0,ev:true},{k:['id.4','id4'],m:'VW ID.4',s:5,c:0,ev:true},
+  {k:['corolla'],m:'Toyota Corolla',s:5,c:4.5},{k:['yaris'],m:'Toyota Yaris',s:5,c:4.1},
+  {k:['rav4'],m:'Toyota RAV4',s:5,c:5.0},{k:['highlander'],m:'Toyota Highlander',s:7,c:6.5},
+  {k:['proace verso'],m:'Toyota ProAce Verso',s:9,c:7.5},
+  {k:['leon'],m:'SEAT Leon',s:5,c:5.6},{k:['ibiza'],m:'SEAT Ibiza',s:5,c:5.1},
+  {k:['tarraco'],m:'SEAT Tarraco',s:7,c:7.2},{k:['ateca'],m:'SEAT Ateca',s:5,c:6.5},
+  {k:['bmw 3','bmw3','řada 3'],m:'BMW 3',s:5,c:6.0},{k:['bmw 5','bmw5','řada 5'],m:'BMW 5',s:5,c:6.8},
+  {k:['bmw x3'],m:'BMW X3',s:5,c:7.0},{k:['bmw x5'],m:'BMW X5',s:5,c:8.5},{k:['bmw x7'],m:'BMW X7',s:7,c:9.0},
+  {k:['mercedes c','třídy c'],m:'Mercedes C',s:5,c:6.2},{k:['mercedes e','třídy e'],m:'Mercedes E',s:5,c:7.0},
+  {k:['v class','v-class','vito','viano'],m:'Mercedes V',s:8,c:8.5},{k:['glc'],m:'Mercedes GLC',s:5,c:7.5},
+  {k:['focus'],m:'Ford Focus',s:5,c:5.8},{k:['mondeo'],m:'Ford Mondeo',s:5,c:6.2},
+  {k:['kuga'],m:'Ford Kuga',s:5,c:6.8},{k:['galaxy'],m:'Ford Galaxy',s:7,c:7.5},
+  {k:['s-max','s max'],m:'Ford S-Max',s:7,c:7.2},{k:['transit','tourneo'],m:'Ford Tourneo',s:9,c:9.0},
+  {k:['i30'],m:'Hyundai i30',s:5,c:5.5},{k:['tucson'],m:'Hyundai Tucson',s:5,c:6.8},
+  {k:['santa fe'],m:'Hyundai Santa Fe',s:7,c:7.5},{k:['ioniq 5','ioniq5'],m:'Hyundai Ioniq 5',s:5,c:0,ev:true},
+  {k:['ceed'],m:'Kia Ceed',s:5,c:5.5},{k:['sportage'],m:'Kia Sportage',s:5,c:6.8},
+  {k:['sorento'],m:'Kia Sorento',s:7,c:7.5},{k:['carnival'],m:'Kia Carnival',s:8,c:8.0},
+  {k:['clio'],m:'Renault Clio',s:5,c:5.1},{k:['megane','mégane'],m:'Renault Mégane',s:5,c:5.8},
+  {k:['trafic'],m:'Renault Trafic',s:9,c:8.5},{k:['master'],m:'Renault Master',s:9,c:9.5},
+  {k:['astra'],m:'Opel Astra',s:5,c:5.5},{k:['insignia'],m:'Opel Insignia',s:5,c:6.2},
+  {k:['zafira'],m:'Opel Zafira',s:7,c:7.0},{k:['grandland'],m:'Opel Grandland',s:5,c:6.5},
+  {k:['308'],m:'Peugeot 308',s:5,c:5.5},{k:['3008'],m:'Peugeot 3008',s:5,c:6.5},
+  {k:['5008'],m:'Peugeot 5008',s:7,c:7.0},{k:['traveller'],m:'Peugeot Traveller',s:9,c:8.5},
+  {k:['duster'],m:'Dacia Duster',s:5,c:6.2},{k:['sandero'],m:'Dacia Sandero',s:5,c:5.5},
+  {k:['lodgy'],m:'Dacia Lodgy',s:7,c:6.5},{k:['jogger'],m:'Dacia Jogger',s:7,c:6.0},
+  {k:['civic'],m:'Honda Civic',s:5,c:5.5},{k:['cr-v','crv'],m:'Honda CR-V',s:5,c:6.5},
+  {k:['qashqai'],m:'Nissan Qashqai',s:5,c:6.5},{k:['x-trail','xtrail'],m:'Nissan X-Trail',s:7,c:7.0},
+  {k:['spacetourer','space tourer'],m:'Citroën SpaceTourer',s:9,c:8.5},
+  {k:['berlingo'],m:'Citroën Berlingo',s:5,c:6.0},{k:['c5 aircross'],m:'Citroën C5 Aircross',s:5,c:6.5},
+  {k:['model 3','tesla 3'],m:'Tesla Model 3',s:5,c:0,ev:true},
+  {k:['model y','tesla y'],m:'Tesla Model Y',s:5,c:0,ev:true},
+  {k:['model x','tesla x'],m:'Tesla Model X',s:7,c:0,ev:true},
+  {k:['xc40'],m:'Volvo XC40',s:5,c:6.8},{k:['xc60'],m:'Volvo XC60',s:5,c:7.2},
+  {k:['xc90'],m:'Volvo XC90',s:7,c:8.5},{k:['cx-5','cx5'],m:'Mazda CX-5',s:5,c:6.5},
+  {k:['outlander'],m:'Mitsubishi Outlander',s:7,c:7.5},
+  {k:['lexus rx','rx 500','rx500','rx 450','rx450','rx 350','rx350'],m:'Lexus RX',s:5,c:7.5},
+  {k:['lexus ux','ux 300','ux300'],m:'Lexus UX',s:5,c:5.5},
+  {k:['lexus nx','nx 350','nx350'],m:'Lexus NX',s:5,c:6.5},
+  {k:['lexus es'],m:'Lexus ES',s:5,c:5.0},
+];
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let state = {
+  passengers:[], cars:[],
+  dest:{text:'Preunegg 66, 8973 Pichl bei Schladming',lat:47.3906,lng:13.6897,resolved:true},
+  pairs:[], earlyGroup:[], returnMix:true, optimized:false, nextId:1,
+  fuelPrices:{petrol:null, diesel:null, date:null}
+};
+
+// ─────────────────────────────────────────────
+//  INIT & TABS
+// ─────────────────────────────────────────────
+function init() {
+  const realPeople = [
+    {name:'Katka Bursová',            going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Petra Zelenková Plická',   going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Magda Začalová',           going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Tomáš Perič',              going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Honza Březina',            going:true,  city1:'Pelhřimov',         city2:'',                 city3:''},
+    {name:'Bass',                     going:false, city1:'',                  city2:'',                 city3:''},
+    {name:'Tomáš Vodička',            going:true,  city1:'Pelhřimov',         city2:'',                 city3:''},
+    {name:'Ondra Selinger',           going:true,  city1:'Plzeň',             city2:'',                 city3:''},
+    {name:'Michal Kadlec',            going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Honza Kadlec',             going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Kryštof Duchan',           going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Matyáš Brtna',             going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Radim Sedlář',             going:true,  city1:'Uherské Hradiště',  city2:'',                 city3:''},
+    {name:'Martin Růžička',           going:true,  city1:'Olomouc',           city2:'Uherské Hradiště', city3:'Brno'},
+    {name:'Michal Bojnanský',         going:false, city1:'',                  city2:'',                 city3:''},
+    {name:'Aleš Svoboda',             going:true,  city1:'Brno',              city2:'',                 city3:''},
+    {name:'Dan Šebesta',              going:true,  city1:'Brno',              city2:'Břeclav',          city3:'Hodonín'},
+    {name:'David Potůček',            going:true,  city1:'Pardubice',         city2:'Brno',             city3:'Pelhřimov'},
+  ];
+  realPeople.forEach(d => state.passengers.push({id:state.nextId++, ...d}));
+  state.passengers.push({id:state.nextId++, name:'', going:true, city1:'', city2:'', city3:''});
+  // Helper: find passenger ID by exact name (used to pre-assign drivers)
+  const pid = name => { const p=state.passengers.find(x=>x.name===name); return p?p.id:null; };
+  const realCars = [
+    {nameInput:'Honda Civic 2.0 i-MMD Hybrid',               model:'Honda Civic',    totalSeats:5, consumption:5.5, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Honza Kadlec'},
+    {nameInput:'Toyota RAV4 2.5 TNGA HEV CVT',               model:'Toyota RAV4',    totalSeats:5, consumption:5.0, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Radim Sedlář'},
+    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'trunk',   comfort:false, driverName:'Katka Bursová'},
+    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'seats',   comfort:false, driverName:'Aleš Svoboda'},
+    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'seats',   comfort:false, driverName:'Dan Šebesta'},
+    {nameInput:'Lexus RX 500h',                               model:'Lexus RX',       totalSeats:5, consumption:7.5, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Honza Březina'},
+  ];
+  realCars.forEach(({driverName,...c}) => state.cars.push({id:state.nextId++, driverId:pid(driverName), ...c}));
+  setLang('cs');  // renders everything
+  document.getElementById('dest-input').value = state.dest.text;
+  document.getElementById('dest-result').innerHTML =
+    `<span style="color:var(--gym-dark)">${t('dest_coords')(state.dest.lat, state.dest.lng)} — Preunegg 66, Pichl bei Schladming</span>`;
+}
+
+function switchTab(name) {
+  if (document.getElementById('tab-'+name).classList.contains('disabled')) return;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name==='settings') refreshPairSelects();
+  if (name==='cars') renderCars();
+}
+
+// ─────────────────────────────────────────────
+//  PASSENGERS
+// ─────────────────────────────────────────────
+function addPassengerRows(n) {
+  for(let i=0;i<n;i++) state.passengers.push({id:state.nextId++,name:'',going:true,city1:'',city2:'',city3:''});
+}
+
+function renderPassengerTable() {
+  document.getElementById('pass-tbody').innerHTML =
+    state.passengers.map((p,i)=>renderPassRow(p,i)).join('');
+  updatePassSummary();
+}
+
+function renderPassRow(p,i) {
+  const inactive = !p.going?'inactive':'';
+  const cityInputs = p.going
+    ? `<td><input type="text" list="cz-cities" value="${esc(p.city1)}" placeholder="${t('ph_city')}" oninput="updatePass(${p.id},'city1',this.value)"></td>
+       <td><input type="text" list="cz-cities" value="${esc(p.city2)}" placeholder="${t('ph_city_opt')}" oninput="updatePass(${p.id},'city2',this.value)"></td>
+       <td><input type="text" list="cz-cities" value="${esc(p.city3)}" placeholder="${t('ph_city_opt')}" oninput="updatePass(${p.id},'city3',this.value)"></td>`
+    : `<td colspan="3" style="padding:5px 8px;font-size:.78rem;color:var(--muted)">${t('not_going')}</td>`;
+  return `<tr class="pass-row ${inactive}" id="prow-${p.id}">
+    <td class="pass-num">${i+1}</td>
+    <td><input type="text" value="${esc(p.name)}" placeholder="${t('ph_name')}" oninput="updatePass(${p.id},'name',this.value)"></td>
+    <td style="text-align:center">
+      <label class="tog"><input type="checkbox" ${p.going?'checked':''} onchange="updatePass(${p.id},'going',this.checked)">
+      <span class="tog-slider"></span></label>
+    </td>
+    ${cityInputs}
+    <td><button class="btn-danger" onclick="deletePass(${p.id})">✕</button></td>
+  </tr>`;
+}
+
+function updatePass(id,field,value) {
+  const p=state.passengers.find(x=>x.id===id); if(!p) return;
+  if(field==='going') value=!!value;
+  p[field]=value;
+  if(field==='name') {
+    const idx=state.passengers.indexOf(p);
+    if(value.trim()&&idx===state.passengers.length-1&&state.passengers.length<30) {
+      addPassengerRows(1);
+      document.getElementById('pass-tbody').insertAdjacentHTML('beforeend',
+        renderPassRow(state.passengers[state.passengers.length-1], state.passengers.length-1));
+    }
+    updatePassSummary(); return;
+  }
+  if(field==='city1'||field==='city2'||field==='city3') { updatePassSummary(); return; }
+  if(field==='going') {
+    const idx=state.passengers.indexOf(p);
+    const old=document.getElementById('prow-'+id);
+    if(old){ const tb=document.createElement('tbody'); tb.innerHTML=renderPassRow(p,idx); old.parentNode.replaceChild(tb.firstElementChild,old); }
+    updatePassSummary(); return;
+  }
+  renderPassengerTable();
+}
+
+function deletePass(id) {
+  state.passengers=state.passengers.filter(p=>p.id!==id);
+  state.pairs=state.pairs.filter(r=>r.p1id!==id&&r.p2id!==id&&r.p3id!==id);
+  if(state.passengers.length<3) addPassengerRows(3-state.passengers.length);
+  renderPassengerTable();
+}
+
+function updatePassSummary() {
+  const named=state.passengers.filter(p=>p.name.trim());
+  const going=named.filter(p=>p.going);
+  const el=document.getElementById('pass-summary');
+  if(el) el.textContent = named.length ? t('summary')(named.length, going.length, named.length-going.length) : '';
+}
+
+// ─────────────────────────────────────────────
+//  CARS
+// ─────────────────────────────────────────────
+function addCar() {
+  const going=state.passengers.filter(p=>p.going&&p.name.trim());
+  const max=Math.max(1,Math.floor(going.length/2));
+  if(state.cars.length>=max){alert(t('alert_maxcars')(max,going.length));return;}
+  state.cars.push({id:state.nextId++,nameInput:'',model:'',totalSeats:5,consumption:6.0,isEv:false,fuelType:'petrol',driverId:null,luggage:'trunk',comfort:false});
+  renderCars();
+}
+
+function deleteCar(id) { state.cars=state.cars.filter(c=>c.id!==id); renderCars(); }
+
+function effectiveCapacity(car) {
+  let c=car.totalSeats; if(car.luggage==='seats') c--; if(car.comfort) c--; return Math.max(1,c);
+}
+
+function renderCars() {
+  const going=state.passengers.filter(p=>p.going&&p.name.trim());
+  const max=Math.max(1,Math.floor(going.length/2));
+  const hint=document.getElementById('max-cars-hint');
+  if(hint) hint.textContent=going.length ? t('max_cars')(max,state.cars.length) : '';
+  const addBtn=document.getElementById('add-car-btn');
+  if(addBtn) addBtn.disabled=state.cars.length>=max;
+  const el=document.getElementById('cars-container');
+  if(!el) return;
+  if(!state.cars.length){el.innerHTML=`<div class="empty"><div class="ei">🚙</div>${t('no_cars')}</div>`;return;}
+  const driverOpts=going.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  el.innerHTML=state.cars.map((car,i)=>{
+    const det=car.model
+      ?`<div id="car-detect-${car.id}" class="car-detect found">${t('car_detect_found')(car.model,car.totalSeats,car.isEv,car.consumption)}</div>`
+      :`<div id="car-detect-${car.id}" class="car-detect hint">${t('car_detect_hint')}</div>`;
+    const effCap=effectiveCapacity(car);
+    const lugOpts=['roofbox','trunk','seats'].map(v=>
+      `<option value="${v}" ${car.luggage===v?'selected':''}>${t('lug_'+v)}</option>`).join('');
+    const sel=car.driverId||'';
+    return `<div class="car-card" id="car-card-${car.id}">
+      <div class="car-header">
+        <div class="car-num">${i+1}</div>
+        <div style="flex:1">
+          <input type="text" value="${esc(car.nameInput)}" placeholder="${lang==='cs'?'Název auta (např. Škoda Octavia 2.0 TDI)':'Car name (e.g. VW Passat 2.0 TDI)'}" oninput="updateCarName(${car.id},this.value)">
+          ${det}
+        </div>
+        <button class="btn-danger" onclick="deleteCar(${car.id})">${t('car_remove')}</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">${t('lbl_driver')}</label>
+          <select onchange="updateCar(${car.id},'driverId',+this.value)">
+            <option value="">${t('no_driver')}</option>
+            ${driverOpts.replace(`value="${sel}"`,`value="${sel}" selected`)}
+          </select></div>
+        <div class="form-group"><label class="form-label">${t('lbl_luggage')}</label>
+          <select onchange="updateCar(${car.id},'luggage',this.value)">${lugOpts}</select></div>
+        <div class="form-group"><label class="form-label">${t('lbl_seats')}</label>
+          <input id="car-seats-${car.id}" type="number" min="2" max="12" value="${car.totalSeats}" oninput="updateCar(${car.id},'totalSeats',+this.value)"></div>
+        <div class="form-group"><label class="form-label">${t('lbl_cons')}</label>
+          <input id="car-cons-${car.id}" type="number" min="0" max="30" step="0.1" value="${car.isEv?0:car.consumption}" ${car.isEv?'disabled':''} oninput="updateCar(${car.id},'consumption',+this.value)"></div>
+        ${!car.isEv?`<div class="form-group"><label class="form-label">${t('lbl_fueltype')}</label><div id="car-ft-${car.id}">${fuelTypeSelector(car)}</div></div>`:''}
+      </div>
+      <label class="check-row" style="margin-top:4px">
+        <input type="checkbox" ${car.comfort?'checked':''} onchange="updateCar(${car.id},'comfort',this.checked)">
+        <span>${t('lbl_comfort')}</span>
+        <span id="car-effcap-${car.id}" class="badge ${effCap<car.totalSeats?'badge-yellow':'badge-green'}" style="margin-left:8px">${t('lbl_capacity')}: ${effCap}</span>
+      </label>
+    </div>`;
+  }).join('');
+}
+
+function updateEffCapBadge(car) {
+  const e=effectiveCapacity(car), el=document.getElementById('car-effcap-'+car.id);
+  if(el){el.textContent=`${t('lbl_capacity')}: ${e}`;el.className=`badge ${e<car.totalSeats?'badge-yellow':'badge-green'}`;el.style.marginLeft='8px';}
+}
+
+function detectFuelType(nameInput) {
+  if(!nameInput) return 'petrol';
+  const n=nameInput.toLowerCase();
+  if(/\btdi\b|\btde\b|\bcdi\b|\bcdti\b|\bhdi\b|\bcrdi\b|\bd4d\b|\bdci\b|\btdci\b|\b[12]\.[0-9]d\b|diesel|nafta/i.test(n)) return 'diesel';
+  return 'petrol';
+}
+
+function updateCarName(id,val) {
+  const car=state.cars.find(c=>c.id===id); if(!car) return;
+  car.nameInput=val;
+  const lower=val.toLowerCase();
+  let matched=null;
+  for(const e of CAR_DB){if(e.k.some(k=>lower.includes(k))){matched=e;break;}}
+  const ps=car.totalSeats,pc=car.consumption,pe=car.isEv;
+  if(matched){car.model=matched.m;car.totalSeats=matched.s;car.consumption=matched.c;car.isEv=!!matched.ev;}
+  else car.model='';
+  if(!car.isEv) car.fuelType=detectFuelType(val);
+  else car.fuelType='electric';
+  const det=document.getElementById('car-detect-'+id);
+  if(det){
+    if(car.model){det.className='car-detect found';det.textContent=t('car_detect_found')(car.model,car.totalSeats,car.isEv,car.consumption);}
+    else{det.className='car-detect hint';det.textContent=t('car_detect_hint');}
+  }
+  if(car.totalSeats!==ps){const e=document.getElementById('car-seats-'+id);if(e)e.value=car.totalSeats;}
+  if(car.consumption!==pc||car.isEv!==pe){const e=document.getElementById('car-cons-'+id);if(e){e.value=car.isEv?0:car.consumption;e.disabled=car.isEv;}}
+  // update fuel type badge if shown
+  const ftEl=document.getElementById('car-ft-'+id);
+  if(ftEl&&!car.isEv){
+    ftEl.innerHTML=fuelTypeSelector(car);
+  }
+  updateEffCapBadge(car);
+}
+
+function fuelTypeSelector(car){
+  if(car.isEv) return '';
+  const p=car.fuelType==='petrol'?'selected':'';
+  const d=car.fuelType==='diesel'?'selected':'';
+  return `<select style="width:auto;padding:5px 8px;font-size:.8rem" onchange="updateCar(${car.id},'fuelType',this.value)">
+    <option value="petrol" ${p}>${t('ft_petrol')}</option>
+    <option value="diesel" ${d}>${t('ft_diesel')}</option>
+  </select>`;
+}
+
+function updateCar(id,field,val) {
+  const car=state.cars.find(c=>c.id===id); if(!car) return;
+  car[field]=val;
+  if(['totalSeats','luggage','comfort'].includes(field)) updateEffCapBadge(car);
+}
+
+// ─────────────────────────────────────────────
+//  SETTINGS
+// ─────────────────────────────────────────────
+function refreshPairSelects() {
+  const going=state.passengers.filter(p=>p.going&&p.name.trim());
+  const opts=`<option value="">${t('pair_sel')}</option>`+going.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('pair-p1').innerHTML=opts;
+  document.getElementById('pair-p2').innerHTML=opts;
+  document.getElementById('pair-p3').innerHTML=opts;
+  renderPairs();
+  refreshEarlyGroupSelects();
+}
+
+function refreshEarlyGroupSelects() {
+  const going=state.passengers.filter(p=>p.going&&p.name.trim());
+  const opts=`<option value="">${t('early_sel')}</option>`+going.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  ['early-p1','early-p2','early-p3'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  renderEarlyGroup();
+}
+
+function addToEarlyGroup() {
+  const ids=['early-p1','early-p2','early-p3']
+    .map(id=>parseInt(document.getElementById(id)?.value||'0')).filter(id=>id>0);
+  if(!ids.length){alert(t('alert_early_sel'));return;}
+  let added=false;
+  ids.forEach(id=>{
+    if(!state.earlyGroup.includes(id)){state.earlyGroup.push(id);added=true;}
+  });
+  if(!added)alert(t('alert_early_dup'));
+  renderEarlyGroup();
+}
+
+function removeFromEarlyGroup(id) {
+  state.earlyGroup=state.earlyGroup.filter(x=>x!==id);
+  renderEarlyGroup();
+}
+
+function renderEarlyGroup() {
+  const el=document.getElementById('early-list');
+  if(!el) return;
+  const members=state.earlyGroup.map(id=>state.passengers.find(p=>p.id===id)).filter(Boolean);
+  if(!members.length){
+    el.innerHTML=`<div style="font-size:.82rem;color:var(--muted);margin-top:8px">${t('early_none')}</div>`;
+    return;
+  }
+  el.innerHTML=members.map(p=>
+    `<div class="pair-item"><span style="flex:1;font-size:.87rem">⏩ <strong>${p.name}</strong></span>
+     <button class="btn-danger" onclick="removeFromEarlyGroup(${p.id})">✕</button></div>`
+  ).join('');
+}
+
+function addPair() {
+  const p1=parseInt(document.getElementById('pair-p1').value)||0;
+  const p2=parseInt(document.getElementById('pair-p2').value)||0;
+  const p3=parseInt(document.getElementById('pair-p3').value)||0;
+  if(!p1||!p2){alert(t('alert_sel2'));return;}
+  const ids=[p1,p2,p3].filter(Boolean);
+  if(new Set(ids).size!==ids.length){alert(t('alert_diff'));return;}
+  // duplicate check: same set of members already exists
+  if(state.pairs.find(r=>{
+    const ex=[r.p1id,r.p2id,r.p3id||0].filter(Boolean);
+    return ids.length===ex.length&&ids.every(id=>ex.includes(id));
+  })){alert(t('alert_dup'));return;}
+  state.pairs.push({id:state.nextId++,p1id:p1,p2id:p2,p3id:p3||null,alsoReturn:false});
+  renderPairs();
+}
+
+function deletePair(id) { state.pairs=state.pairs.filter(r=>r.id!==id); renderPairs(); }
+
+function renderPairs() {
+  const el=document.getElementById('pairs-list');
+  if(!el) return;
+  if(!state.pairs.length){el.innerHTML=`<div style="font-size:.82rem;color:var(--muted);margin-top:8px">${t('pair_none')}</div>`;return;}
+  el.innerHTML=state.pairs.map(r=>{
+    const a=state.passengers.find(p=>p.id===r.p1id);
+    const b=state.passengers.find(p=>p.id===r.p2id);
+    const c=r.p3id?state.passengers.find(p=>p.id===r.p3id):null;
+    if(!a||!b) return '';
+    const names=[a,b,c].filter(Boolean).map(p=>`<strong>${p.name}</strong>`).join(' + ');
+    return `<div class="pair-item"><span style="flex:1;font-size:.87rem">🔗 ${names}</span>
+      <button class="btn-danger" onclick="deletePair(${r.id})">✕</button></div>`;
+  }).join('');
+}
+
+async function geocodeDest() {
+  const q=document.getElementById('dest-input').value.trim();
+  if(!q){alert(t('alert_dest'));return;}
+  const el=document.getElementById('dest-result');
+  el.innerHTML=`<span style="color:var(--muted)">${t('dest_loading')}</span>`;
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,{headers:{'Accept-Language':'cs,en'}});
+    const data=await res.json();
+    if(data&&data.length){
+      const {lat,lon,display_name}=data[0];
+      state.dest={text:q,lat:parseFloat(lat),lng:parseFloat(lon),resolved:true};
+      el.innerHTML=`<span style="color:var(--gym-dark)">${t('dest_coords')(parseFloat(lat).toFixed(4), parseFloat(lon).toFixed(4))} — ${display_name.substring(0,80)}</span>`;
+    }else el.innerHTML=`<span style="color:#cc3333">${t('dest_err')}</span>`;
+  }catch(e){
+    state.dest={text:q,lat:null,lng:null,resolved:false};
+    el.innerHTML=`<span style="color:#b87000">${t('dest_offline')}</span>`;
+  }
+}
+
+// ─────────────────────────────────────────────
+//  HAVERSINE
+// ─────────────────────────────────────────────
+//  GEOGRAPHIC RULES
+// ─────────────────────────────────────────────
+// Cars departing from these districts must NOT make additional stops
+// in the forbidden districts. Hard block — no exceptions.
+// "Same city as driver start" is always allowed (no detour at all).
+const MORAVIA_ORIGINS = new Set([
+  'Brno','Uherské Hradiště','Olomouc','Zlín','Hodonín','Břeclav','Kroměříž',
+  'Vsetín','Prostějov','Přerov','Ostrava','Opava','Frýdek-Místek','Znojmo',
+  'Karviná','Havířov','Šumperk','Jeseník','Nový Jičín',
+  'Pelhřimov'  // extended rule: Pelhřimov drivers also cannot stop in forbidden cities
+]);
+const BOHEMIA_FORBIDDEN = new Set([
+  'Praha','Plzeň',
+  'Pelhřimov'  // extended rule: forbidden as an additional stop for the above drivers
+]);
+
+// Returns true when a driver from driverCity must NOT stop in pickupCity.
+// Exception: driver's own starting city is never forbidden (zero detour).
+function isForbiddenPickup(driverCity, pickupCity) {
+  if(!driverCity || !pickupCity) return false;
+  if(pickupCity === driverCity) return false; // same city as start → always allowed
+  return MORAVIA_ORIGINS.has(driverCity) && BOHEMIA_FORBIDDEN.has(pickupCity);
+}
+
+// Returns true when ALL of passenger p's pickup options are forbidden for driverCity
+// (= this car physically cannot serve this passenger at any of their locations)
+function isForbiddenAssignment(p, driverCity) {
+  if(!driverCity || !MORAVIA_ORIGINS.has(driverCity)) return false;
+  const opts = pickupOptions(p);
+  if(!opts.length) return false; // no city → always assignable
+  // Forbidden only when every available pickup city is in the blocked set
+  // (driver's own city is exempt — passenger already "there" at start)
+  return opts.every(c => c !== driverCity && BOHEMIA_FORBIDDEN.has(c));
+}
+
+// ─────────────────────────────────────────────
+// Road correction factor: straight-line (Haversine) × 1.35 ≈ actual road distance.
+// Calibrated from real routes: Praha→Schladming 411 km, Pelhřimov→Schladming 360 km,
+// UH+Brno→Schladming 500 km (all vs Google Maps).
+// Applied only in calcRouteKm (displayed distances & fuel); routing comparisons use raw Haversine.
+const ROAD_FACTOR = 1.35;
+
+function haversine(a,b) {
+  if(!a||!b) return 0;
+  const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.asin(Math.sqrt(x));
+}
+function getCoords(n){return n?CITY_COORDS[n]||null:null;}
+function pickupOptions(p){return [p.city1,p.city2,p.city3].filter(Boolean);}
+function minPickupDist(p,fromCity){
+  const fc=getCoords(fromCity);if(!fc)return 9999;
+  let mn=Infinity;
+  for(const c of pickupOptions(p)){const co=getCoords(c);if(co)mn=Math.min(mn,haversine(fc,co));}
+  return mn===Infinity?9999:mn;
+}
+// Detour: extra km to pick up passenger p for a car starting at fromCity going to dest.
+// Adds a large penalty (5000) when the pickup is in the WRONG direction —
+// i.e., the pickup city is significantly further from the destination than the driver's start.
+// This prevents sending UH cars to Plzeň or Brno cars to Praha.
+function pickupDetour(p,fromCity,dest){
+  const fc=getCoords(fromCity);if(!fc)return 9999;
+  const direct=haversine(fc,dest);
+  let mn=Infinity;
+  // Iterate with index so we can penalise alternatives: city2 +50 km, city3 +100 km
+  const ALT_PENALTY=[0,50,100];
+  [p.city1,p.city2,p.city3].forEach((c,idx)=>{
+    if(!c)return;
+    const co=getCoords(c);if(!co)return;
+    if(isForbiddenPickup(fromCity,c))return; // hard geographic rule: Moravia→Bohemia forbidden
+    const toDest=haversine(co,dest);
+    let detour=Math.max(0,haversine(fc,co)+toDest-direct);
+    // Wrong direction: pickup is >25% further from destination than driver's start → big penalty
+    if(toDest>direct*1.25) detour+=5000;
+    // Prefer primary city (Bydliště): penalise alt pickups
+    detour+=ALT_PENALTY[idx];
+    mn=Math.min(mn,detour);
+  });
+  return mn===Infinity?99999:mn; // 99999 = no valid pickup exists (hard block)
+}
+
+// ─────────────────────────────────────────────
+//  OPTIMIZATION
+// ─────────────────────────────────────────────
+function buildGroups(ppl,pairs) {
+  const ids=ppl.map(p=>p.id), par={};
+  ids.forEach(id=>par[id]=id);
+  function find(x){return par[x]===x?x:(par[x]=find(par[x]));}
+  function unite(a,b){if(ids.includes(a)&&ids.includes(b))par[find(a)]=find(b);}
+  pairs.forEach(r=>{
+    unite(r.p1id,r.p2id);
+    if(r.p3id){unite(r.p1id,r.p3id);} // ensures all three share same root
+  });
+  const g={};
+  ppl.forEach(p=>{const root=find(p.id);(g[root]=g[root]||[]).push(p);});
+  return Object.values(g).sort((a,b)=>b.length-a.length);
+}
+
+function optimizeRoute(driverCity,pickupCities,dest) {
+  let rem=[...new Set(pickupCities.filter(c=>c&&c!==driverCity))];
+  const route=driverCity?[driverCity]:[];
+  let cur=getCoords(driverCity)||dest;
+  while(rem.length){
+    let near=rem[0],nd=Infinity;
+    rem.forEach(c=>{const co=getCoords(c);if(!co)return;const d=haversine(cur,co);if(d<nd){nd=d;near=c;}});
+    route.push(near); cur=getCoords(near)||cur; rem=rem.filter(c=>c!==near);
+  }
+  route.push('__DEST__'); return route;
+}
+
+function calcRouteKm(route,dest) {
+  let km=0;
+  for(let i=0;i<route.length-1;i++){
+    const a=route[i]==='__DEST__'?dest:getCoords(route[i]);
+    const b=route[i+1]==='__DEST__'?dest:getCoords(route[i+1]);
+    km+=haversine(a,b);
+  }
+  return Math.round(km * ROAD_FACTOR);
+}
+
+// Direction-aware route optimizer: picks the next stop that minimizes
+// dist(current→pickup) + dist(pickup→dest) with a heavy penalty for
+// stops that are "behind" the driver (further from dest than driver's start).
+// Returns { route, chosen }.
+function optimizeRouteFlex(driverCity,passengers,dest) {
+  const chosen={};
+  let rem=[...passengers];
+  const route=driverCity?[driverCity]:[];
+  let cur=getCoords(driverCity)||dest;
+  const driverDist=getCoords(driverCity)?haversine(getCoords(driverCity),dest):9999;
+  while(rem.length){
+    let bestPass=null,bestCity=null,bestScore=Infinity;
+    for(const p of rem){
+      const opts=pickupOptions(p);
+      if(!opts.length){
+        if(bestPass===null){bestPass=p;bestCity=null;bestScore=Infinity;}
+        continue;
+      }
+      // Iterate with index to prefer primary city over alternatives
+      const ALT_PENALTY=[0,50,100];
+      [p.city1,p.city2,p.city3].forEach((c,idx)=>{
+        if(!c)return;
+        if(c===driverCity){
+          // Same city as driver start: free pickup, but still prefer city1 if tie
+          const s=ALT_PENALTY[idx]; // 0 for city1, higher for alts even at start
+          if(s<bestScore){bestScore=s;bestPass=p;bestCity=c;}
+          return;
+        }
+        const co=getCoords(c);if(!co)return;
+        if(isForbiddenPickup(driverCity,c))return; // hard geographic rule
+        const toDest=haversine(co,dest);
+        let score=haversine(cur,co)+toDest;
+        // Penalize stops that are further from dest than driver's home — wrong direction
+        if(toDest>driverDist*1.25) score+=5000;
+        // Prefer primary city (Bydliště): penalise alternatives
+        score+=ALT_PENALTY[idx];
+        if(score<bestScore){bestScore=score;bestPass=p;bestCity=c;}
+      });
+    }
+    if(!bestPass)break;
+    chosen[bestPass.id]=bestCity;
+    if(bestCity&&bestCity!==driverCity){
+      if(route[route.length-1]!==bestCity)route.push(bestCity);
+      cur=getCoords(bestCity)||cur;
+    }
+    rem=rem.filter(p=>p!==bestPass);
+  }
+  route.push('__DEST__');
+  return{route,chosen};
+}
+
+function generateVariant(going,cars,dest,extra,oh,ecoMode) {
+  if(!going.length||!cars.length) return null;
+  const usable=cars.filter(c=>{if(!c.driverId) return false; return !!going.find(p=>p.id===c.driverId);});
+  if(!usable.length) return null;
+  let sorted=[...usable].sort((a,b)=>effectiveCapacity(b)-effectiveCapacity(a));
+  let min=0,cap=0;
+  for(const c of sorted){if(cap>=going.length)break;cap+=effectiveCapacity(c);min++;}
+  const num=Math.min(sorted.length,min+extra);
+  let active=ecoMode?[...usable].sort((a,b)=>(a.isEv?-1:b.isEv?1:0)||(a.consumption-b.consumption)).slice(0,num):sorted.slice(0,num);
+  const groups=buildGroups(going,state.pairs);
+  const asgn={};
+  active.forEach(c=>{const d=going.find(p=>p.id===c.driverId);asgn[c.id]={car:c,driver:d,passengers:[]};});
+  const assigned=new Set(active.map(c=>c.driverId));
+  const unassigned=[];
+  // earlyGroup: early passengers MUST go in an earlyGroup car.
+  // Non-early passengers MAY also ride in an earlyGroup car (remaining seats are open to all).
+  const earlyIds=new Set(state.earlyGroup);
+  const carsFor=pid=>{
+    if(earlyIds.size===0) return active;
+    if(earlyIds.has(pid)) return active.filter(c=>earlyIds.has(c.driverId)); // early → only early cars
+    return active; // non-early → any car (including early car if seats remain)
+  };
+
+  // Count how many USABLE cars (across all variants, not just current active)
+  // can potentially serve a passenger. Using usable (not active) ensures that
+  // passengers like Praha/Plzeň who only fit in 2 cars score lower than
+  // Pelhřimov passengers who also have Honza Březina's car as an option.
+  // Lower number = more constrained = processed first to reserve scarce slots.
+  function numCompatCars(p){
+    const allCars=earlyIds.size===0?usable:(earlyIds.has(p.id)?usable.filter(c=>earlyIds.has(c.driverId)):usable);
+    return allCars.filter(c=>{
+      const d=going.find(x=>x.id===c.driverId);
+      return d?!isForbiddenAssignment(p,d.city1):true;
+    }).length;
+  }
+
+  // Sort groups: most geographically constrained non-driver members first
+  groups.sort((a,b)=>{
+    const score=grp=>{
+      const pax=grp.filter(p=>!usable.find(c=>c.driverId===p.id));
+      if(!pax.length) return Infinity;
+      return Math.min(...pax.map(p=>numCompatCars(p)));
+    };
+    return score(a)-score(b);
+  });
+
+  // Helper: try to assign a single passenger to the best available car (2-pass)
+  function tryAssign(p){
+    let best=null,bs=-Infinity;
+    for(const pass of[1,2]){
+      if(best)break;
+      for(const c of carsFor(p.id)){
+        const sl=asgn[c.id],av=effectiveCapacity(c)-1-sl.passengers.length;
+        if(av<=0)continue;
+        if(sl.driver&&isForbiddenAssignment(p,sl.driver.city1))continue;
+        const detour=sl.driver?pickupDetour(p,sl.driver.city1,dest):9999;
+        if(pass===1&&detour>=5000)continue;
+        const sc=av*100-(pass===1?detour:minPickupDist(p,sl.driver?.city1||''));
+        if(sc>bs){bs=sc;best=c;}
+      }
+    }
+    if(best){asgn[best.id].passengers.push(p);assigned.add(p.id);return true;}
+    return false;
+  }
+
+  groups.forEach(grp=>{
+    const nd=grp.filter(p=>!assigned.has(p.id)); if(!nd.length) return;
+    const existCar=active.find(c=>grp.some(p=>p.id===c.driverId));
+    if(existCar){
+      // compatible: anyone can ride in an earlyGroup car; only non-early can ride in a regular car
+      const compatible=nd.filter(p=>earlyIds.size===0||earlyIds.has(existCar.driverId)||!earlyIds.has(p.id));
+      // incompatible: early passengers who ended up assigned to a non-early car's group — redirect them
+      const incompatible=nd.filter(p=>earlyIds.size>0&&!earlyIds.has(existCar.driverId)&&earlyIds.has(p.id));
+      const sl=asgn[existCar.id],av=effectiveCapacity(existCar)-1-sl.passengers.length;
+      compatible.slice(0,av).forEach(p=>{sl.passengers.push(p);assigned.add(p.id);});
+      compatible.slice(av).forEach(p=>{if(!tryAssign(p))unassigned.push(p);});
+      incompatible.forEach(p=>{if(!tryAssign(p))unassigned.push(p);});
+    } else {
+      // Sort group members by constraint before trying to place them
+      const sorted=[...nd].sort((a,b)=>numCompatCars(a)-numCompatCars(b));
+      sorted.forEach(p=>{if(!tryAssign(p))unassigned.push(p);});
+    }
+  });
+
+  // Individual pass: anyone not yet assigned (sort most constrained first)
+  going
+    .filter(p=>!assigned.has(p.id))
+    .sort((a,b)=>numCompatCars(a)-numCompatCars(b))
+    .forEach(p=>{if(!tryAssign(p))unassigned.push(p);});
+
+  // Deduplicate: a passenger can appear in unassigned from both the groups pass
+  // and the individual pass — keep only one entry per person
+  {const seen=new Set(); const u=[...unassigned]; unassigned.length=0; u.forEach(p=>{if(!seen.has(p.id)){seen.add(p.id);unassigned.push(p);}});}
+
+  // ── Auto-expand: if any passengers remain unassigned, add cars one by one ──
+  // Sorts remaining usable cars same way as original selection (eco→efficiency, else→capacity)
+  const remainPool=ecoMode
+    ?[...usable].sort((a,b)=>(a.isEv?-1:b.isEv?1:0)||(a.consumption-b.consumption)).filter(c=>!active.some(a=>a.id===c.id))
+    :[...usable].sort((a,b)=>effectiveCapacity(b)-effectiveCapacity(a)).filter(c=>!active.some(a=>a.id===c.id));
+  while(unassigned.length>0&&remainPool.length>0){
+    const nextCar=remainPool.shift();
+    const nd=going.find(p=>p.id===nextCar.driverId);
+    active.push(nextCar);
+    asgn[nextCar.id]={car:nextCar,driver:nd,passengers:[]};
+    assigned.add(nextCar.driverId);
+    const retry=unassigned.splice(0); // drain unassigned list
+    retry.forEach(p=>{
+      if(assigned.has(p.id))return;
+      let best=null,bs=-Infinity;
+      for(const pass of[1,2]){
+        if(best)break;
+        for(const c of carsFor(p.id)){
+          const sl=asgn[c.id],av=effectiveCapacity(c)-1-sl.passengers.length;
+          if(av<=0)continue;
+          if(sl.driver&&isForbiddenAssignment(p,sl.driver.city1))continue;
+          const detour=sl.driver?pickupDetour(p,sl.driver.city1,dest):9999;
+          if(pass===1&&detour>=5000)continue;
+          const sc=av*100-(pass===1?detour:minPickupDist(p,sl.driver?.city1||''));
+          if(sc>bs){bs=sc;best=c;}
+        }
+      }
+      if(best){asgn[best.id].passengers.push(p);assigned.add(p.id);}
+      else unassigned.push(p);
+    });
+  }
+
+  let totalKm=0,totalFuel=0,totalCost=0,hasCost=false;
+  const fp=state.fuelPrices;
+  const carResults=active.map(c=>{
+    const sl=asgn[c.id]; if(!sl.driver) return null;
+    const all=[sl.driver,...sl.passengers];
+    const {route,chosen}=optimizeRouteFlex(sl.driver.city1,all,dest);
+    const km=calcRouteKm(route,dest);
+    const fuel=c.isEv?0:(km*c.consumption/100)*(1+oh/100);
+    const pricePerL = c.isEv?0 : (c.fuelType==='diesel'&&fp.diesel?fp.diesel : (fp.petrol||0));
+    const cost = (!c.isEv && pricePerL>0) ? Math.round(fuel*pricePerL) : null;
+    if(cost!==null){totalCost+=cost;hasCost=true;}
+    totalKm+=km; totalFuel+=fuel;
+    const cmap={};
+    all.forEach(p=>{const city=chosen[p.id]||p.city1;if(city)(cmap[city]=cmap[city]||[]).push(p);});
+    return{car:c,driver:sl.driver,passengers:sl.passengers,route,km,fuel,cost,cmap,chosen};
+  }).filter(Boolean);
+  return{cars:carResults,totalKm,totalFuel:Math.round(totalFuel*10)/10,totalCost:hasCost?totalCost:null,unassigned,numCars:active.length,numPlanned:num,autoExpanded:active.length>num};
+}
+
+function runOptimize() {
+  const going=state.passengers.filter(p=>p.going&&p.name.trim());
+  const out=document.getElementById('result-output');
+  if(!going.length){out.innerHTML=`<div class="warning-box">${t('warn_nop')}</div>`;switchTab('results');return;}
+  if(!state.cars.length){out.innerHTML=`<div class="warning-box">${t('warn_nocar')}</div>`;switchTab('results');return;}
+  if(!state.dest.lat){out.innerHTML=`<div class="warning-box">${t('warn_nodest')}</div>`;switchTab('results');return;}
+  const oh=parseInt(document.getElementById('fuel-overhead').value)||20;
+  const dest={lat:state.dest.lat,lng:state.dest.lng};
+  const defs=[
+    {lbl:'var_a_lbl',cls:'var-1',desc:'var_a_desc',extra:0,eco:false},
+    {lbl:'var_b_lbl',cls:'var-2',desc:'var_b_desc',extra:1,eco:false},
+    {lbl:'var_c_lbl',cls:'var-3',desc:'var_c_desc',extra:2,eco:false},
+    {lbl:'var_d_lbl',cls:'var-4',desc:'var_d_desc',extra:0,eco:true},
+    {lbl:'var_e_lbl',cls:'var-1',desc:'var_e_desc',extra:1,eco:true},
+    {lbl:'var_f_lbl',cls:'var-2',desc:'var_f_desc',extra:2,eco:true},
+  ];
+  const variants=defs.map(d=>{const r=generateVariant(going,state.cars,dest,d.extra,oh,d.eco);return r?{...r,...d}:null;});
+  const btn=document.getElementById('optimize-btn');
+  if(btn) btn.textContent=t('opt_btn_done');
+  state.optimized=true;
+  document.getElementById('tab-results').classList.remove('disabled');
+  out.innerHTML=variants.map(v=>v?renderVariant(v,dest):'').join('');
+  switchTab('results');
+}
+
+function renderVariant(v,dest) {
+  const fuelStr=v.totalFuel>0?t('res_fuel')(v.totalFuel):t('res_elec');
+  const costStr=v.totalCost!==null?`<span style="font-weight:700;color:var(--gym-dark)">${t('res_total_cost')(v.totalCost)}</span>`:'';
+  const warn=v.unassigned.length?`<div class="warning-box">${t('unassigned')(v.unassigned.length,v.unassigned.map(p=>p.name).join(', '))}</div>`:'';
+  const expandNote=v.autoExpanded?`<div style="font-size:.78rem;color:#7a6200;background:#fffbe6;border:1px solid #ffe066;border-radius:7px;padding:6px 12px;margin-bottom:8px">⚠️ ${t('auto_expanded')(v.numPlanned,v.numCars)}</div>`:'';
+  return `<div class="variant-card">
+    <div class="variant-header">
+      <span class="variant-badge ${v.cls}">${t(v.lbl)}</span>
+      <span class="variant-desc">${t(v.desc)}</span>
+      <div class="variant-stats">
+        <span>${t('res_cars')(v.numCars)}</span><span>${t('res_km')(v.totalKm)}</span><span>${fuelStr}</span>${costStr}
+      </div>
+    </div>
+    <div class="variant-body">${expandNote}${warn}${v.cars.map(cr=>renderCarResult(cr,dest)).join('')}</div>
+  </div>`;
+}
+
+function renderCarResult(cr,dest) {
+  const all=[cr.driver,...cr.passengers];
+  const effCap=effectiveCapacity(cr.car);
+  const ftLabel = cr.car.isEv ? '' : (cr.car.fuelType==='diesel' ? ` ${t('ft_diesel')}` : ` ${t('ft_petrol')}`);
+  const fuelStr = cr.car.isEv ? t('res_elec') : `⛽ ~${Math.round(cr.fuel*10)/10}l${ftLabel}${cr.cost!==null?` · ${t('res_cost')(cr.cost)}`:''}`;
+
+  const stopsHtml=cr.route.map((city,i)=>{
+    if(city==='__DEST__') return `<div class="route-stop">
+      <div class="stop-dot sd-dest">🏁</div>
+      <div class="stop-info"><div class="city">${state.dest.text}</div><div class="ppl">${t('res_dest')}</div></div></div>`;
+    const ppl=(cr.cmap[city]||[]);
+    const pplStr=ppl.map(p=>`${p.id===cr.driver.id?'🚗':'👤'} ${p.name}`).join(' · ');
+    let kmStr='';
+    if(i<cr.route.length-1){
+      const nx=cr.route[i+1];
+      const ac=getCoords(city),bc=nx==='__DEST__'?dest:getCoords(nx);
+      if(ac&&bc)kmStr=`<span class="km-tag">→ ~${Math.round(haversine(ac,bc))} km</span>`;
+    }
+    return `<div class="route-stop">
+      <div class="stop-dot ${i===0?'sd-start':'sd-pickup'}">${i+1}</div>
+      <div class="stop-info"><div class="city">${city}</div><div class="ppl">${pplStr||'—'}</div></div>
+      ${kmStr}</div>`;
+  }).join('');
+  return `<div class="car-assign">
+    <div class="ca-header">
+      <div style="font-size:1.1rem">🚙</div>
+      <div class="ca-name">${cr.car.nameInput||cr.car.model||'Auto'}</div>
+      <div class="ca-meta">
+        <span>👥 ${all.length}/${effCap}</span><span>📍 ~${cr.km} km</span><span>${fuelStr}</span>
+      </div>
+    </div>
+    <div class="ca-body">${stopsHtml}</div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────────
+//  RANDOM DEMO GENERATOR
+// ─────────────────────────────────────────────
+const RNAMES_M = ['Ondřej','Petr','Martin','Tomáš','Lukáš','Jakub','Jan','Marek','Pavel','Jiří',
+  'David','Michal','Radek','Filip','Zdeněk','Roman','Karel','Libor','Stanislav','Vladimír'];
+const RNAMES_F = ['Jana','Marie','Eva','Tereza','Barbora','Nikola','Lucie','Petra','Monika','Lenka',
+  'Kateřina','Veronika','Martina','Alena','Zuzana','Hana','Ivana','Šárka','Renata','Dagmar'];
+const RSURNAMES = ['Novák','Svoboda','Novotný','Dvořák','Černý','Procházka','Krejčí','Vlček',
+  'Blaha','Marková','Horáček','Havel','Šimková','Pospíšil','Kolář','Kratochvíl','Veselý',
+  'Kopecký','Fiala','Sedlář','Beneš','Kovář','Müller','Pokorný','Navrátil','Čermák','Blažek'];
+const RCITIES = Object.keys(CITY_COORDS);
+const RCARS = [
+  {nameInput:'Škoda Octavia 2.0 TDI',  model:'Škoda Octavia', totalSeats:5,consumption:5.8,isEv:false},
+  {nameInput:'Škoda Superb 2.0 TDI',   model:'Škoda Superb',  totalSeats:5,consumption:6.5,isEv:false},
+  {nameInput:'Škoda Kodiaq 2.0 TDI',   model:'Škoda Kodiaq',  totalSeats:7,consumption:7.2,isEv:false},
+  {nameInput:'VW Passat 2.0 TDI',      model:'VW Passat',     totalSeats:5,consumption:6.2,isEv:false},
+  {nameInput:'VW Touran 1.6 TDI',      model:'VW Touran',     totalSeats:7,consumption:6.5,isEv:false},
+  {nameInput:'VW Sharan 2.0 TDI',      model:'VW Sharan',     totalSeats:7,consumption:7.0,isEv:false},
+  {nameInput:'Toyota Corolla Hybrid',   model:'Toyota Corolla',totalSeats:5,consumption:4.5,isEv:false},
+  {nameInput:'Toyota RAV4 Hybrid',      model:'Toyota RAV4',   totalSeats:5,consumption:5.0,isEv:false},
+  {nameInput:'Ford Galaxy 2.0 TDCi',   model:'Ford Galaxy',   totalSeats:7,consumption:7.5,isEv:false},
+  {nameInput:'Ford S-Max 2.0 TDCi',    model:'Ford S-Max',    totalSeats:7,consumption:7.2,isEv:false},
+  {nameInput:'BMW 3 320d',             model:'BMW 3',         totalSeats:5,consumption:6.0,isEv:false},
+  {nameInput:'BMW 5 520d',             model:'BMW 5',         totalSeats:5,consumption:6.8,isEv:false},
+  {nameInput:'Mercedes E 220d',        model:'Mercedes E',    totalSeats:5,consumption:7.0,isEv:false},
+  {nameInput:'Hyundai Santa Fe 2.2',   model:'Hyundai Santa Fe',totalSeats:7,consumption:7.5,isEv:false},
+  {nameInput:'Kia Sorento 2.2 CRDi',   model:'Kia Sorento',   totalSeats:7,consumption:7.5,isEv:false},
+  {nameInput:'Peugeot 5008 1.5 HDi',   model:'Peugeot 5008',  totalSeats:7,consumption:7.0,isEv:false},
+  {nameInput:'VW ID.4',                model:'VW ID.4',       totalSeats:5,consumption:0,  isEv:true},
+  {nameInput:'Tesla Model Y',          model:'Tesla Model Y', totalSeats:5,consumption:0,  isEv:true},
+  {nameInput:'Škoda Enyaq iV',         model:'Škoda Enyaq',   totalSeats:5,consumption:0,  isEv:true},
+];
+const RLUGGAGE = ['trunk','trunk','trunk','roofbox','seats'];
+
+function rnd(n){ return Math.floor(Math.random()*n); }
+function rndPick(arr){ return arr[rnd(arr.length)]; }
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function generateDemoPeople() {
+  const count = 8 + rnd(7); // 8–14 people
+  const usedNames = new Set();
+  const people = [];
+  for(let i=0;i<count;i++){
+    let name, tries=0;
+    do {
+      const male = Math.random()>0.45;
+      const first = rndPick(male?RNAMES_M:RNAMES_F);
+      const last  = rndPick(RSURNAMES);
+      name = `${first} ${last}`;
+      tries++;
+    } while(usedNames.has(name) && tries<20);
+    usedNames.add(name);
+    const city1 = rndPick(RCITIES);
+    const altCities = RCITIES.filter(c=>c!==city1);
+    const city2 = Math.random()<0.3 ? rndPick(altCities) : '';
+    const city3 = city2 && Math.random()<0.15 ? rndPick(altCities.filter(c=>c!==city2)) : '';
+    const going = Math.random() > 0.12; // ~12% not going
+    people.push({name, going, city1, city2, city3, driver: false});
+  }
+  // assign enough drivers: at least ceil(goingCount / 4) so everyone fits
+  const goingIdx = people.map((_,i)=>i).filter(i=>people[i].going);
+  const minDrivers = Math.ceil(goingIdx.length / 4);
+  const numDrivers = Math.min(goingIdx.length, minDrivers + rnd(2));
+  shuffle(goingIdx).slice(0, numDrivers).forEach(i => people[i].driver=true);
+  return people;
+}
+
+function generateDemoCars(drivers, goingCount) {
+  // need enough cars to seat all going passengers (avg effective capacity ~4 per car)
+  const minCars = Math.ceil(goingCount / 4);
+  const numCars = Math.min(drivers.length, minCars + rnd(2)); // min needed + 0–1 extra
+  const pickedCars = shuffle([...RCARS]).slice(0, numCars);
+  const driverList = shuffle(drivers).slice(0, numCars);
+  return pickedCars.map((car, i) => ({
+    ...car,
+    fuelType: car.isEv ? 'electric' : detectFuelType(car.nameInput),
+    luggage: rndPick(RLUGGAGE),
+    comfort: Math.random() < 0.25,
+    driverId: driverList[i]?.id || null,
+  }));
+}
+
+function fillDemo(tab) {
+  if(tab==='passengers'){
+    if(state.passengers.some(p=>p.name.trim())&&!confirm(t('confirm_pass'))) return;
+    state.passengers=[];state.nextId=1;
+    generateDemoPeople().forEach(d=>state.passengers.push({id:state.nextId++,...d}));
+    state.passengers.push({id:state.nextId++,name:'',going:true,city1:'',city2:'',city3:''});
+    renderPassengerTable();
+  }
+  if(tab==='cars'){
+    const going=state.passengers.filter(p=>p.going&&p.name.trim());
+    if(!going.length){alert(t('alert_nopass'));return;}
+    if(state.cars.length&&!confirm(t('confirm_cars'))) return;
+    state.cars=[];
+    // mark drivers on going list based on driver flag from demo generation
+    const driverGoing = going.filter(p=>state.passengers.find(x=>x.id===p.id)?.driver);
+    const drivers = driverGoing.length >= 2 ? driverGoing : going.slice(0, Math.ceil(going.length/4)+1);
+    const demoCars = generateDemoCars(drivers, going.length);
+    const max=Math.max(1,Math.floor(going.length/2));
+    demoCars.slice(0,max).forEach((d,i)=>state.cars.push({
+      id:state.nextId++,
+      driverId: drivers[i]?.id || null,
+      ...d
+    }));
+    renderCars();
+  }
+  if(tab==='settings'){
+    document.getElementById('dest-input').value='Preunegg 66, 8973 Pichl bei Schladming';
+    state.dest={text:'Preunegg 66, 8973 Pichl bei Schladming',lat:47.3906,lng:13.6897,resolved:true};
+    document.getElementById('dest-result').innerHTML=
+      `<span style="color:var(--gym-dark)">${t('dest_coords')(47.3906,13.6897)} — Preunegg 66, Pichl bei Schladming</span>`;
+    const going=state.passengers.filter(p=>p.going&&p.name.trim());
+    if(going.length>=2&&!state.pairs.length){
+      const p=going.find(x=>x.name.includes('Petr')),m=going.find(x=>x.name.includes('Marie'));
+      if(p&&m) state.pairs.push({id:state.nextId++,p1id:p.id,p2id:m.id,alsoReturn:true});
+      else state.pairs.push({id:state.nextId++,p1id:going[0].id,p2id:going[1].id,alsoReturn:false});
+      refreshPairSelects();
+    }
+  }
+}
+
+function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+init();
+</script>
+</body>
+</html>
