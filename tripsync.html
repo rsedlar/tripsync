@@ -911,36 +911,36 @@ let state = {
 // ─────────────────────────────────────────────
 function init() {
   const realPeople = [
-    {name:'Katka Bursová',            going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Petra Zelenková Plická',   going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Magda Začalová',           going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Tomáš Perič',              going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Honza Březina',            going:true,  city1:'Pelhřimov',         city2:'',                 city3:''},
-    {name:'Bass',                     going:false, city1:'',                  city2:'',                 city3:''},
-    {name:'Tomáš Vodička',            going:true,  city1:'Pelhřimov',         city2:'',                 city3:''},
-    {name:'Ondra Selinger',           going:true,  city1:'Plzeň',             city2:'',                 city3:''},
-    {name:'Michal Kadlec',            going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Honza Kadlec',             going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Kryštof Duchan',           going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Matyáš Brtna',             going:true,  city1:'Praha',             city2:'',                 city3:''},
-    {name:'Radim Sedlář',             going:true,  city1:'Uherské Hradiště',  city2:'',                 city3:''},
-    {name:'Martin Růžička',           going:true,  city1:'Olomouc',           city2:'Uherské Hradiště', city3:'Brno'},
-    {name:'Michal Bojnanský',         going:false, city1:'',                  city2:'',                 city3:''},
-    {name:'Aleš Svoboda',             going:true,  city1:'Brno',              city2:'',                 city3:''},
-    {name:'Dan Šebesta',              going:true,  city1:'Brno',              city2:'Břeclav',          city3:'Hodonín'},
-    {name:'David Potůček',            going:true,  city1:'Pardubice',         city2:'Brno',             city3:'Pelhřimov'},
+    {name:'Katka B.',       going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Petra Z.',       going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Magda Z.',       going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Tomáš P.',       going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Honza B.',       going:true,  city1:'Pelhřimov',         city2:'',                 city3:''},
+    {name:'Bass',           going:false, city1:'',                  city2:'',                 city3:''},
+    {name:'Tomáš V.',       going:true,  city1:'Pelhřimov',         city2:'',                 city3:''},
+    {name:'Ondra S.',       going:true,  city1:'Plzeň',             city2:'',                 city3:''},
+    {name:'Michal K.',      going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Honza K.',       going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Kryštof D.',     going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Matyáš B.',      going:true,  city1:'Praha',             city2:'',                 city3:''},
+    {name:'Radim S.',       going:true,  city1:'Uherské Hradiště',  city2:'',                 city3:''},
+    {name:'Martin R.',      going:true,  city1:'Olomouc',           city2:'Uherské Hradiště', city3:'Brno'},
+    {name:'Michal B.',      going:false, city1:'',                  city2:'',                 city3:''},
+    {name:'Aleš S.',        going:true,  city1:'Brno',              city2:'',                 city3:''},
+    {name:'Dan Š.',         going:true,  city1:'Brno',              city2:'Břeclav',          city3:'Hodonín'},
+    {name:'David P.',       going:true,  city1:'Pardubice',         city2:'Brno',             city3:'Pelhřimov'},
   ];
   realPeople.forEach(d => state.passengers.push({id:state.nextId++, ...d}));
   state.passengers.push({id:state.nextId++, name:'', going:true, city1:'', city2:'', city3:''});
   // Helper: find passenger ID by exact name (used to pre-assign drivers)
   const pid = name => { const p=state.passengers.find(x=>x.name===name); return p?p.id:null; };
   const realCars = [
-    {nameInput:'Honda Civic 2.0 i-MMD Hybrid',               model:'Honda Civic',    totalSeats:5, consumption:5.5, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Honza Kadlec'},
-    {nameInput:'Toyota RAV4 2.5 TNGA HEV CVT',               model:'Toyota RAV4',    totalSeats:5, consumption:5.0, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Radim Sedlář'},
-    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'trunk',   comfort:false, driverName:'Katka Bursová'},
-    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'seats',   comfort:false, driverName:'Aleš Svoboda'},
-    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'seats',   comfort:false, driverName:'Dan Šebesta'},
-    {nameInput:'Lexus RX 500h',                               model:'Lexus RX',       totalSeats:5, consumption:7.5, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Honza Březina'},
+    {nameInput:'Honda Civic 2.0 i-MMD Hybrid',               model:'Honda Civic',    totalSeats:5, consumption:5.5, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Honza K.'},
+    {nameInput:'Toyota RAV4 2.5 TNGA HEV CVT',               model:'Toyota RAV4',    totalSeats:5, consumption:5.0, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Radim S.'},
+    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'trunk',   comfort:false, driverName:'Katka B.'},
+    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'seats',   comfort:false, driverName:'Aleš S.'},
+    {nameInput:'Toyota Corolla TS 1.8 Hybrid e-CVT GR Sport', model:'Toyota Corolla', totalSeats:5, consumption:4.5, isEv:false, fuelType:'petrol', luggage:'seats',   comfort:false, driverName:'Dan Š.'},
+    {nameInput:'Lexus RX 500h',                               model:'Lexus RX',       totalSeats:5, consumption:7.5, isEv:false, fuelType:'petrol', luggage:'roofbox', comfort:false, driverName:'Honza B.'},
   ];
   realCars.forEach(({driverName,...c}) => state.cars.push({id:state.nextId++, driverId:pid(driverName), ...c}));
   setLang('cs');  // renders everything
